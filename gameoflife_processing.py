@@ -11,8 +11,8 @@ Any dead cell with exactly three live neighbours becomes a live cell.
 
 WINDOW_WIDTH = 64 * 12
 WINDOW_HEIGHT = 64 * 12
-GRID_WIDTH = 16
-GRID_HEIGHT = 16
+GRID_WIDTH = 64
+GRID_HEIGHT = 64
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
 GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
 UPDATE_PER_SECOND = 30
@@ -20,7 +20,7 @@ UPDATE_PER_SECOND_MAX = 500
 DEBUGPRINTS = False
 COLORED = True
 SHOW_ALIVE_CELLS = True
-H_MAX = 100
+H_MAX = 1000
 S_MAX = 100
 V_MAX = 100
 H_DELTA = 1
@@ -34,7 +34,7 @@ class GoLBoard:
         self.currentFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.coloredFrame = [[(0,0,100) for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.color = (0,50,100) # HSV form
+        self.color = (0,70,100) # HSV form
 
     def reset(self):
         self.__init__()
@@ -96,7 +96,10 @@ class GoLBoard:
 
         self.currentFrame = self.nextFrame
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.color = ((self.color[0] + H_DELTA) % H_MAX, self.color[1], self.color[2])
+        newh = (self.color[0] + H_DELTA) % H_MAX
+        news = self.color[1]
+        newv = self.color[2]
+        self.color = (newh, news, newv)
 
     def drawBoard(self):
         for y in range(GRID_HEIGHT):
@@ -150,10 +153,13 @@ def mouseClicked(event):
 
 def mouseDragged(event):
     DEBUGPRINT("MOUSE MOVED", event, mouseX, mouseY)
-    if (mousePressed):
-        cellX = mouseX / GRID_RENDER_CELL_WIDTH
-        cellY = mouseY / GRID_RENDER_CELL_HEIGHT
-        board.setCell(cellX, cellY)
+    try:
+        if (mousePressed):
+            cellX = mouseX / GRID_RENDER_CELL_WIDTH
+            cellY = mouseY / GRID_RENDER_CELL_HEIGHT
+            board.setCell(cellX, cellY)
+    except Exception as e:
+        DEBUGPRINT("Mouse drag out of bounds error", e)
 
 def mouseWheel(event):
     global UPDATE_PER_SECOND, framePeriod
