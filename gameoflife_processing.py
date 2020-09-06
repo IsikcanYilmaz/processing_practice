@@ -9,15 +9,19 @@ Any live cell with more than three live neighbours dies.
 Any dead cell with exactly three live neighbours becomes a live cell.
 '''
 
-WINDOW_WIDTH = 64 * 10
-WINDOW_HEIGHT = 64 * 10
-GRID_WIDTH = 32
-GRID_HEIGHT = 32
+WINDOW_WIDTH = 64 * 12
+WINDOW_HEIGHT = 64 * 12
+GRID_WIDTH = 64
+GRID_HEIGHT = 64
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
 GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 500
 DEBUGPRINTS = True
+COLORED = True
+H_MAX = 100
+S_MAX = 100
+V_MAX = 100
 
 def DEBUGPRINT(*argv):
     if (DEBUGPRINTS):
@@ -27,10 +31,11 @@ class GoLBoard:
     def __init__(self):
         self.currentFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
+        self.coloredFrame = [[(0,0,100) for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
+        self.color = (0,50,80) # HSV form
 
     def reset(self):
-        self.currentFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
+        self.__init__()
 
     def setCell(self, x, y):
         self.currentFrame[y][x] = 1
@@ -64,14 +69,12 @@ class GoLBoard:
 
                 aliveNeighbors = [n for n in neighbors if n > 0]
 
-                if (len(aliveNeighbors) == 0):
-                    continue
-
                 cellLives = False
 
                 # is alive and one or no neighbors
                 if currentValue > 0 and len(aliveNeighbors) < 2:
                     cellLives = False
+                    self.coloredFrame[y][x] = self.color
 
                 # is alive and 2 or 3 alive neighbors
                 if currentValue > 0 and (len(aliveNeighbors) == 2 or len(aliveNeighbors) == 3):
@@ -80,6 +83,7 @@ class GoLBoard:
                 # is alive and more than 4 alive neighbors
                 if currentValue > 0 and len(aliveNeighbors) >= 4:
                     cellLives = False
+                    self.coloredFrame[y][x] = self.color
 
                 # is dead cell and 3 alive neighbors
                 if currentValue == 0 and len(aliveNeighbors) == 3:
@@ -87,9 +91,9 @@ class GoLBoard:
 
                 self.nextFrame[y][x] = (1 if cellLives else 0)
 
-
         self.currentFrame = self.nextFrame
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
+        self.color = ((self.color[0] + 1) % H_MAX, self.color[1], self.color[2])
 
     def drawBoard(self):
         for y in range(GRID_HEIGHT):
@@ -97,7 +101,10 @@ class GoLBoard:
                 if self.getCell(x, y):
                     fill(0, 0, 0)
                 else:
-                    fill(255, 255, 255)
+                    if (COLORED):
+                        fill(*self.coloredFrame[y][x])
+                    else:
+                        fill(0, 0, 100)
 
                 rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT,
                         GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT)
@@ -123,6 +130,8 @@ def setup():
     for i in range(0, 500):
         fill(randint(0,255), randint(0, 255), randint(0, 255))
         ellipse(randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT), 80, 80)
+
+    colorMode(HSB, 100)
 
     board.drawBoard()
 
