@@ -16,7 +16,7 @@ GRID_HEIGHT = 32
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
 GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
 UPDATE_PER_SECOND = 30
-UPDATE_PER_SECOND_MAX = 200
+UPDATE_PER_SECOND_MAX = 500
 DEBUGPRINTS = True
 
 def DEBUGPRINT(*argv):
@@ -156,12 +156,18 @@ def keyPressed(event):
     if (key == u' '):
         togglePause()
 
+def timeFunction(fn, desc=""):
+    begin = time.time()
+    fn()
+    end = time.time()
+    DEBUGPRINT("Fn %s Ran in %f seconds" % (desc, (end-begin)))
+
 def draw():
     global lastFrameTimestamp, framePeriod
     if (playing):
         now = time.time()
         if (lastFrameTimestamp == 0 or now - lastFrameTimestamp > framePeriod):
-            board.play()
+            timeFunction(board.play, "board.play") # 0.194000 seconds @ 128x128
             lastFrameTimestamp = now
-            DEBUGPRINT("FRAME", now)
-    board.drawBoard()
+            #DEBUGPRINT("FRAME", now)
+    timeFunction(board.drawBoard, "board.drawBoard") # 0.058000 seconds @ 128x128
