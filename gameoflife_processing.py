@@ -9,21 +9,23 @@ Any live cell with more than three live neighbours dies.
 Any dead cell with exactly three live neighbours becomes a live cell.
 '''
 
-WINDOW_WIDTH = 64 * 12
-WINDOW_HEIGHT = 64 * 12
-GRID_WIDTH = 64
-GRID_HEIGHT = 64
-GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
-GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
+WINDOW_WIDTH = 64 * 14
+WINDOW_HEIGHT = 64 * 14
+GRID_WIDTH = 128
+GRID_HEIGHT = 128
 UPDATE_PER_SECOND = 30
-UPDATE_PER_SECOND_MAX = 500
-DEBUGPRINTS = False
+UPDATE_PER_SECOND_MAX = 1000
+DEBUGPRINTS = True
 COLORED = True
 SHOW_ALIVE_CELLS = True
-H_MAX = 1000
+H_MAX = 100
 S_MAX = 100
 V_MAX = 100
 H_DELTA = 1
+
+
+GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
+GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
 
 def DEBUGPRINT(*argv):
     if (DEBUGPRINTS):
@@ -38,6 +40,7 @@ class GoLBoard:
 
     def reset(self):
         self.__init__()
+        DEBUGPRINT("Board reset")
 
     def setCell(self, x, y):
         self.currentFrame[y][x] = 1
@@ -186,14 +189,14 @@ def timeFunction(fn, desc=""):
     begin = time.time()
     fn()
     end = time.time()
-    DEBUGPRINT("Fn %s Ran in %f seconds" % (desc, (end-begin)))
+    return (end - begin)
 
 def draw():
     global lastFrameTimestamp, framePeriod
     if (playing):
         now = time.time()
         if (lastFrameTimestamp == 0 or now - lastFrameTimestamp > framePeriod):
-            timeFunction(board.play, "board.play") # 0.194000 seconds @ 128x128
+            boardPlayRuntime = timeFunction(board.play, "board.play") # 0.194000 seconds @ 128x128
             lastFrameTimestamp = now
             #DEBUGPRINT("FRAME", now)
-    timeFunction(board.drawBoard, "board.drawBoard") # 0.058000 seconds @ 128x128
+    boardDrawRuntime = timeFunction(board.drawBoard, "board.drawBoard") # 0.058000 seconds @ 128x128
