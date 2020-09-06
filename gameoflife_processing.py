@@ -11,17 +11,19 @@ Any dead cell with exactly three live neighbours becomes a live cell.
 
 WINDOW_WIDTH = 64 * 12
 WINDOW_HEIGHT = 64 * 12
-GRID_WIDTH = 64
-GRID_HEIGHT = 64
+GRID_WIDTH = 16
+GRID_HEIGHT = 16
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
 GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 500
-DEBUGPRINTS = True
+DEBUGPRINTS = False
 COLORED = True
+SHOW_ALIVE_CELLS = True
 H_MAX = 100
 S_MAX = 100
 V_MAX = 100
+H_DELTA = 1
 
 def DEBUGPRINT(*argv):
     if (DEBUGPRINTS):
@@ -32,13 +34,14 @@ class GoLBoard:
         self.currentFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.coloredFrame = [[(0,0,100) for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.color = (0,50,80) # HSV form
+        self.color = (0,50,100) # HSV form
 
     def reset(self):
         self.__init__()
 
     def setCell(self, x, y):
         self.currentFrame[y][x] = 1
+        self.coloredFrame[y][x] = (0,0,0)
 
     def getCell(self, x, y):
         return self.currentFrame[y][x]
@@ -93,13 +96,16 @@ class GoLBoard:
 
         self.currentFrame = self.nextFrame
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.color = ((self.color[0] + 1) % H_MAX, self.color[1], self.color[2])
+        self.color = ((self.color[0] + H_DELTA) % H_MAX, self.color[1], self.color[2])
 
     def drawBoard(self):
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):
                 if self.getCell(x, y):
-                    fill(0, 0, 0)
+                    if (SHOW_ALIVE_CELLS):
+                        fill(0, 0, 0)
+                    else:
+                        fill(*self.coloredFrame[y][x])
                 else:
                     if (COLORED):
                         fill(*self.coloredFrame[y][x])
@@ -131,7 +137,7 @@ def setup():
         fill(randint(0,255), randint(0, 255), randint(0, 255))
         ellipse(randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT), 80, 80)
 
-    colorMode(HSB, 100)
+    colorMode(HSB, H_MAX, S_MAX, V_MAX)
 
     board.drawBoard()
 
@@ -161,9 +167,14 @@ def mouseWheel(event):
     DEBUGPRINT("UPDATE FREQ %d", UPDATE_PER_SECOND)
 
 def keyPressed(event):
+    global SHOW_ALIVE_CELLS
     DEBUGPRINT("KEY PRESSED", key, keyCode)
     if (key == u' '):
         togglePause()
+    if (key == u'r'):
+        board.reset()
+    if (key == u'a'):
+        SHOW_ALIVE_CELLS = not SHOW_ALIVE_CELLS
 
 def timeFunction(fn, desc=""):
     begin = time.time()
