@@ -11,8 +11,8 @@ Any dead cell with exactly three live neighbours becomes a live cell.
 
 WINDOW_WIDTH = 64 * 14
 WINDOW_HEIGHT = 64 * 14
-GRID_WIDTH = 128
-GRID_HEIGHT = 128
+GRID_WIDTH = 8
+GRID_HEIGHT = 8
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 1000
 DEBUGPRINTS = True
