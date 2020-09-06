@@ -11,11 +11,12 @@ Any dead cell with exactly three live neighbours becomes a live cell.
 
 WINDOW_WIDTH = 64 * 10
 WINDOW_HEIGHT = 64 * 10
-GRID_WIDTH = 8
-GRID_HEIGHT = 8
+GRID_WIDTH = 32
+GRID_HEIGHT = 32
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
 GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
-UPDATE_PER_SECOND = 100
+UPDATE_PER_SECOND = 30
+UPDATE_PER_SECOND_MAX = 200
 DEBUGPRINTS = True
 
 def DEBUGPRINT(*argv):
@@ -132,8 +133,23 @@ def mouseClicked(event):
     DEBUGPRINT("CELL", cellX, cellY)
     board.setCell(cellX, cellY)
 
-def mouseMoved(event):
+def mouseDragged(event):
     DEBUGPRINT("MOUSE MOVED", event, mouseX, mouseY)
+    if (mousePressed):
+        cellX = mouseX / GRID_RENDER_CELL_WIDTH
+        cellY = mouseY / GRID_RENDER_CELL_HEIGHT
+        board.setCell(cellX, cellY)
+
+def mouseWheel(event):
+    global UPDATE_PER_SECOND, framePeriod
+    DEBUGPRINT("MOUSE WHEEL", event, event.getCount())
+    UPDATE_PER_SECOND += event.getCount()
+    if (UPDATE_PER_SECOND < 1):
+        UPDATE_PER_SECOND = 1
+    if (UPDATE_PER_SECOND > UPDATE_PER_SECOND_MAX):
+        UPDATE_PER_SECOND = UPDATE_PER_SECOND_MAX
+    framePeriod = 1.0/UPDATE_PER_SECOND
+    DEBUGPRINT("UPDATE FREQ %d", UPDATE_PER_SECOND)
 
 def keyPressed(event):
     DEBUGPRINT("KEY PRESSED", key, keyCode)
