@@ -11,17 +11,23 @@ Any dead cell with exactly three live neighbours becomes a live cell.
 
 WINDOW_WIDTH = 64 * 14
 WINDOW_HEIGHT = 64 * 14
-GRID_WIDTH = 8
-GRID_HEIGHT = 8
+GRID_WIDTH = 32
+GRID_HEIGHT = 32
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 1000
 DEBUGPRINTS = True
 COLORED = True
 SHOW_ALIVE_CELLS = True
+H_DEFAULT = 0
+S_DEFAULT = 100
+V_DEFAULT = 100
 H_MAX = 100
 S_MAX = 100
 V_MAX = 100
-H_DELTA = 1
+H_DELTA = 5
+H_DECAY = 0
+S_DECAY = 0.5
+V_DECAY = 0
 
 
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
@@ -36,7 +42,7 @@ class GoLBoard:
         self.currentFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.coloredFrame = [[(0,0,100) for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.color = (0,70,100) # HSV form
+        self.color = (H_DEFAULT,S_DEFAULT,V_DEFAULT) # HSV form
 
     def reset(self):
         self.__init__()
@@ -120,6 +126,10 @@ class GoLBoard:
 
                 rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT,
                         GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT)
+                tmp = self.coloredFrame[y][x]
+                self.coloredFrame[y][x] = ( 0 if tmp[0] - H_DECAY < 0 else tmp[0] - H_DECAY, \
+                                            0 if tmp[1] - S_DECAY < 0 else tmp[1] - S_DECAY, \
+                                            0 if tmp[2] - V_DECAY < 0 else tmp[2] - V_DECAY)
 
 ###########################################
 board = GoLBoard()
