@@ -9,6 +9,7 @@ Any live cell with more than three live neighbours dies.
 Any dead cell with exactly three live neighbours becomes a live cell.
 '''
 
+# Config
 WINDOW_WIDTH = 64 * 14
 WINDOW_HEIGHT = 64 * 14
 GRID_WIDTH = 32
@@ -18,16 +19,20 @@ UPDATE_PER_SECOND_MAX = 1000
 DEBUGPRINTS = True
 COLORED = True
 SHOW_ALIVE_CELLS = True
+
 H_DEFAULT = 0
 S_DEFAULT = 100
 V_DEFAULT = 100
+
 H_MAX = 100
 S_MAX = 100
 V_MAX = 100
-H_DELTA = 5
+
+H_DELTA = 1
 H_DECAY = 0
 S_DECAY = 0.5
 V_DECAY = 0
+
 
 
 GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
