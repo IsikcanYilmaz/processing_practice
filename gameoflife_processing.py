@@ -10,8 +10,8 @@ Any dead cell with exactly three live neighbours becomes a live cell.
 '''
 
 # Config
-WINDOW_WIDTH = 64 * 14
-WINDOW_HEIGHT = 64 * 14
+WINDOW_WIDTH = 64 * 4
+WINDOW_HEIGHT = 64 * 4
 GRID_WIDTH = 32
 GRID_HEIGHT = 32
 UPDATE_PER_SECOND = 30
