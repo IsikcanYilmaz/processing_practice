@@ -2,3 +2,6 @@
 
 gameoflife:
 	java -jar ${PROCESSING_DIR}/processing-py.jar gameoflife_processing.py
+
+bubbles:
+	java -jar ${PROCESSING_DIR}/processing-py.jar bubbles_processing.py
