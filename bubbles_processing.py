@@ -47,12 +47,12 @@ class Canvas:
         self.s = 50
         self.v = 100
 
-        self.osc1 = Oscillator(0.001)
+        self.osc1 = Oscillator(0.01)
         self.osc2 = Oscillator(0.001)
         self.osc3 = Oscillator(0.001)
 
-        self.oscX = Oscillator(0.01)
-        self.oscY = Oscillator(0.05)
+        self.oscX = Oscillator(0)
+        self.oscY = Oscillator(0.01)
 
     def reset(self):
         background(BACKGROUND) # WHITE BACKGROUND
@@ -64,13 +64,13 @@ class Canvas:
         self.oscX.update()
         self.oscY.update()
 
-        self.bubbleWidth = self.osc1.getVal() * 400
+        self.bubbleWidth = self.osc1.getVal() * 100
         self.h = abs(self.osc2.getVal()) * 100
 
     def drawCanvas(self):
         # Draw ellipse of random size
-        x = (WINDOW_WIDTH / 2) #+ (self.oscX.getVal() * 100)
-        y = (WINDOW_WIDTH / 2)
+        x = mouseX#(WINDOW_WIDTH / 2) + (self.oscX.getVal() * 200)
+        y = mouseY#(WINDOW_WIDTH / 2) + (self.oscY.getVal() * 200)
         w = randint(0, 100)
         h = randint(0, H_MAX)
         s = randint(0, 70)
@@ -79,7 +79,7 @@ class Canvas:
         # ELLIPSE 1
         noStroke()
         fill(self.h, self.s, self.v)
-        ellipse(x + (self.oscX.getVal() * 200), y + (self.oscY.getVal() * 100), self.bubbleWidth, self.bubbleWidth)
+        ellipse(x, y, self.bubbleWidth, self.bubbleWidth)
 
 
 
