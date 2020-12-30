@@ -5,3 +5,6 @@ gameoflife:
 
 bubbles:
 	java -jar ${PROCESSING_DIR}/processing-py.jar bubbles_processing.py
+
+line_growth:
+	java -jar ${PROCESSING_DIR}/processing-py.jar line_growth_processing.py
