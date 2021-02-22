@@ -64,7 +64,7 @@ class Canvas:
             beginShape()
             for pt in self.points:
                 strokeWeight(1)
-                circle(pt[0], pt[1], POINT_RADIUS)
+                # circle(pt[0], pt[1], POINT_RADIUS)
                 strokeWeight(8)
                 curveVertex(pt[0], pt[1])
             endShape()
