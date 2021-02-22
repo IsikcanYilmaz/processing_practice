@@ -3,13 +3,15 @@ from math import pi, sin
 import time
 
 # Config
-WINDOW_WIDTH = 64 * 12
-WINDOW_HEIGHT = 64 * 12
+WINDOW_WIDTH = 64 * 15
+WINDOW_HEIGHT = 64 * 15
 GRID_WIDTH = 32
 GRID_HEIGHT = 32
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 1000
 DEBUGPRINTS = True
+SAVEFRAMES = False
+SAVEFRAMESDIR = "bubbles_frames"
 
 H_MAX = 100
 S_MAX = 100
@@ -42,17 +44,17 @@ class Oscillator:
 
 class Canvas:
     def __init__(self):
-        self.bubbleWidth = 10
+        self.bubbleWidth = 0
         self.h = 0
-        self.s = 50
+        self.s = 100
         self.v = 100
 
-        self.osc1 = Oscillator(0.01)
-        self.osc2 = Oscillator(0.001)
+        self.osc1 = Oscillator(0.005)
+        self.osc2 = Oscillator(0.0005)
         self.osc3 = Oscillator(0.001)
 
         self.oscX = Oscillator(0)
-        self.oscY = Oscillator(0.01)
+        self.oscY = Oscillator(0.005)
 
     def reset(self):
         background(BACKGROUND) # WHITE BACKGROUND
@@ -64,22 +66,30 @@ class Canvas:
         self.oscX.update()
         self.oscY.update()
 
-        self.bubbleWidth = self.osc1.getVal() * 100
+        self.bubbleWidth = self.osc1.getVal() * 300
         self.h = abs(self.osc2.getVal()) * 100
+        self.s = (self.osc3.getVal() * 50) + 50
 
     def drawCanvas(self):
         # Draw ellipse of random size
-        x = mouseX#(WINDOW_WIDTH / 2) + (self.oscX.getVal() * 200)
-        y = mouseY#(WINDOW_WIDTH / 2) + (self.oscY.getVal() * 200)
-        w = randint(0, 100)
-        h = randint(0, H_MAX)
-        s = randint(0, 70)
-        v = randint(0, V_MAX)
+        x = (WINDOW_WIDTH / 2) + (self.oscX.getVal() * 300) #mouseX
+        y = (WINDOW_WIDTH / 2) + (self.oscY.getVal() * 300) #mouseY
+
+        if (self.oscY.getVal() > 0):
+            x -= 200
+            y -= 300
+
+        # i want 386, 339 to be the center. so do some offsetting
+        # normally center is 480, 480. 480 - xoffset = 386. xoffset = 94
+        #                              480 - yoffset = 339. yoffset = 141
+        # this is when window height and width is 960
+        xoffset = abs((WINDOW_WIDTH / 2) - 386)
+        yoffset = abs((WINDOW_HEIGHT / 2) - 339)
 
         # ELLIPSE 1
         noStroke()
         fill(self.h, self.s, self.v)
-        ellipse(x, y, self.bubbleWidth, self.bubbleWidth)
+        ellipse(x + xoffset, y + yoffset, self.bubbleWidth, self.bubbleWidth)
 
 
 
@@ -93,7 +103,6 @@ def togglePause():
     global playing
     playing = ~playing
     DEBUGPRINT("Playing" if playing else "Paused")
-
 
 
 ###########################################
@@ -144,3 +153,6 @@ def draw():
             lastFrameTimestamp = now
     canvasUpdateRuntime = timeFunction(canvas.update, "canvas.update")
     canvasDrawRuntime = timeFunction(canvas.drawCanvas, "canvas.drawCanvas")
+
+    if (SAVEFRAMES):
+        saveFrame("%s/output-####.png" % SAVEFRAMESDIR)
