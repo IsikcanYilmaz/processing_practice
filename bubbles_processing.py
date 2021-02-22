@@ -1,16 +1,18 @@
 from random import randint
 from math import pi, sin
 import time
+import sys
 
 # Config
-WINDOW_WIDTH = 64 * 15
-WINDOW_HEIGHT = 64 * 15
+WINDOW_WIDTH = 64 * 12
+WINDOW_HEIGHT = 64 * 12
 GRID_WIDTH = 32
 GRID_HEIGHT = 32
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 1000
+SMALLEST_ELLIPSE_WIDTH = 1
 DEBUGPRINTS = True
-SAVEFRAMES = False
+SAVEFRAMES = True
 SAVEFRAMESDIR = "bubbles_frames"
 
 H_MAX = 100
@@ -42,6 +44,48 @@ class Oscillator:
     def getVal(self):
         return self.val
 
+class Bubble:
+    def __init__(self, x, y, direction="down", id=0):
+        self.id = id
+        self.x = x
+        self.y = y
+        self.xOffset = 0
+        self.yOffset = 0
+        self.w = SMALLEST_ELLIPSE_WIDTH
+        self.direction = direction
+        self.h = 0
+        self.s = 100
+        self.v = 100
+        self.widthOscillator = Oscillator(0.005, phase=0)
+        self.xOscillator = Oscillator(0)
+        if (direction == "down"):
+            self.yOscillator = Oscillator(0.005, phase=4)
+        else:
+            self.yOscillator = Oscillator(0.005, phase=4)
+        self.hOscillator = Oscillator(0.001, phase = id * 0.005)
+        self.sOscillator = Oscillator(0.005)
+
+    def update(self):
+        self.widthOscillator.update()
+        self.hOscillator.update()
+        self.sOscillator.update()
+        self.xOscillator.update()
+        self.yOscillator.update()
+        self.w = self.widthOscillator.getVal() * 50
+        self.h = (self.hOscillator.getPhase() * 100) % H_MAX
+        self.s = self.sOscillator.getVal() * 20 + 60
+        self.xOffset = self.xOscillator.getVal() * 50
+        self.yOffset = self.yOscillator.getVal() * (-50 if self.direction == "down" else 50)
+        if (self.yOffset < 0):
+            self.xOffset += 75/2
+            self.yOffset += 30
+
+    def draw(self):
+        noStroke()
+        fill(self.h, self.s, self.v)
+        ellipse(self.x + self.xOffset, self.y + self.yOffset, self.w, self.w)
+    
+
 class Canvas:
     def __init__(self):
         self.bubbleWidth = 0
@@ -56,42 +100,29 @@ class Canvas:
         self.oscX = Oscillator(0)
         self.oscY = Oscillator(0.005)
 
+        self.bubbles = []
+        rows = 10
+        columns = 12
+        for j in range(0, rows):
+            for i in range(0, columns):
+                id = j
+                if (i % 2):
+                    self.bubbles.append(Bubble(i * 75 , j * 125, "down", id))
+                else:
+                    self.bubbles.append(Bubble(i * 75 , j * 125 , "up", id))
+
+
     def reset(self):
         background(BACKGROUND) # WHITE BACKGROUND
 
     def update(self):
-        self.osc1.update()
-        self.osc2.update()
-        self.osc3.update()
-        self.oscX.update()
-        self.oscY.update()
-
-        self.bubbleWidth = self.osc1.getVal() * 300
-        self.h = abs(self.osc2.getVal()) * 100
-        self.s = (self.osc3.getVal() * 50) + 50
+        for b in self.bubbles:
+            b.update()
 
     def drawCanvas(self):
-        # Draw ellipse of random size
-        x = (WINDOW_WIDTH / 2) + (self.oscX.getVal() * 300) #mouseX
-        y = (WINDOW_WIDTH / 2) + (self.oscY.getVal() * 300) #mouseY
-
-        if (self.oscY.getVal() > 0):
-            x -= 200
-            y -= 300
-
-        # i want 386, 339 to be the center. so do some offsetting
-        # normally center is 480, 480. 480 - xoffset = 386. xoffset = 94
-        #                              480 - yoffset = 339. yoffset = 141
-        # this is when window height and width is 960
-        xoffset = abs((WINDOW_WIDTH / 2) - 386)
-        yoffset = abs((WINDOW_HEIGHT / 2) - 339)
-
-        # ELLIPSE 1
-        noStroke()
-        fill(self.h, self.s, self.v)
-        ellipse(x + xoffset, y + yoffset, self.bubbleWidth, self.bubbleWidth)
-
-
+        for b in self.bubbles:
+            b.draw()
+      
 
 ###########################################
 canvas = Canvas()
