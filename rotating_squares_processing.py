@@ -46,6 +46,11 @@ class CustomSquare:
         self.x4 = self.x + radius * sin((self.phase + 7.0/8) * tau) #x - (edgeLen/2)
         self.y4 = self.y + radius * cos((self.phase + 7.0/8) * tau) #y - (edgeLen/2)
 
+    def replace(self, x, y):
+        self.x = x
+        self.y = y
+        self.calculateCoords()
+
     def rotate(self, angle):
         self.angle = angle
         self.calculateCoords()
@@ -61,7 +66,7 @@ class CustomSquare:
 class Canvas:
     def __init__(self):
         self.a = 0
-        self.s = 0
+        self.s = 30
         self.test = CustomSquare(100, 100, self.s, 1, self.a)
 
     def reset(self):
@@ -73,9 +78,9 @@ class Canvas:
     def drawCanvas(self):
         self.test.draw()
         self.a += 1
-        self.s += 0.5
         self.test.resize(self.s)
         self.test.rotate(self.a)
+        self.test.replace(mouseX, mouseY)
         
 
 
