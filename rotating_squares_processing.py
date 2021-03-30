@@ -1,4 +1,5 @@
 from random import randint
+from math import *
 import time
 
 # Config
@@ -14,13 +15,54 @@ H_MAX = 100
 S_MAX = 100
 V_MAX = 100
 
+tau = 2 * pi
+
 def DEBUGPRINT(*argv):
     if (DEBUGPRINTS):
         print(argv)
 
+class CustomSquare:
+    def __init__(self, x, y, edgeLen, thickness=1, angle=0):
+        self.x = x
+        self.y = y
+        self.edgeLen = edgeLen
+        self.thickness = thickness
+        self.angle = angle
+        self.calculateCoords()
+        
+    def calculateCoords(self):
+        self.phase = self.angle / 360.0
+        radius = (self.edgeLen / 2.0) * sqrt(2)
+
+        self.x1 = self.x + radius * sin((self.phase + 1.0/8) * tau) #x - (edgeLen/2)
+        self.y1 = self.y + radius * cos((self.phase + 1.0/8) * tau) #y - (edgeLen/2)
+
+        self.x2 = self.x + radius * sin((self.phase + 3.0/8) * tau) #x - (edgeLen/2)
+        self.y2 = self.y + radius * cos((self.phase + 3.0/8) * tau) #y - (edgeLen/2)
+
+        self.x3 = self.x + radius * sin((self.phase + 5.0/8) * tau) #x - (edgeLen/2)
+        self.y3 = self.y + radius * cos((self.phase + 5.0/8) * tau) #y - (edgeLen/2)
+
+        self.x4 = self.x + radius * sin((self.phase + 7.0/8) * tau) #x - (edgeLen/2)
+        self.y4 = self.y + radius * cos((self.phase + 7.0/8) * tau) #y - (edgeLen/2)
+
+    def rotate(self, angle):
+        self.angle = angle
+        self.calculateCoords()
+
+    def resize(self, edgeLen):
+        self.edgeLen = edgeLen
+        self.calculateCoords()
+
+    def draw(self):
+        strokeWeight(self.thickness)
+        quad(self.x1, self.y1, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4)
+
 class Canvas:
     def __init__(self):
-        pass
+        self.a = 0
+        self.s = 0
+        self.test = CustomSquare(100, 100, self.s, 1, self.a)
 
     def reset(self):
         pass
@@ -29,7 +71,12 @@ class Canvas:
         pass
 
     def drawCanvas(self):
-        pass
+        self.test.draw()
+        self.a += 1
+        self.s += 0.5
+        self.test.resize(self.s)
+        self.test.rotate(self.a)
+        
 
 
 ###########################################

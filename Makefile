@@ -8,3 +8,6 @@ bubbles:
 
 line_growth:
 	java -jar ${PROCESSING_DIR}/processing-py.jar line_growth_processing.py
+
+rotating_squares:
+	java -jar ${PROCESSING_DIR}/processing-py.jar rotating_squares_processing.py
