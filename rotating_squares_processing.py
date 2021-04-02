@@ -3,23 +3,46 @@ from math import *
 import time
 
 # Config
-WINDOW_WIDTH = 64 * 4
-WINDOW_HEIGHT = 64 * 4
+WINDOW_WIDTH = 64 * 10
+WINDOW_HEIGHT = 64 * 10
 GRID_WIDTH = 32
 GRID_HEIGHT = 32
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 1000
 DEBUGPRINTS = True
 
-H_MAX = 100
+H_MAX = 360
 S_MAX = 100
 V_MAX = 100
 
 tau = 2 * pi
 
+DEFAULT_FILL_COLOR = (0, 80, 100)
+DEFAULT_STROKE_COLOR = (0, 0, 0)
+DEFAULT_BACKGROUND_COLOR = (0, 0, 0) # WHITE
+
 def DEBUGPRINT(*argv):
     if (DEBUGPRINTS):
         print(argv)
+
+class Oscillator:
+    def __init__(self, increment, phase = 0):
+        self.increment = increment
+        self.phase = phase
+        self.val = sin(self.phase * pi)
+
+    def update(self):
+        self.phase += self.increment
+        self.val = sin(self.phase * pi)
+
+    def setIncrement(self, increment):
+        self.increment = increment
+
+    def getPhase(self):
+        return self.phase
+
+    def getVal(self):
+        return self.val
 
 class CustomSquare:
     def __init__(self, x, y, edgeLen, thickness=1, angle=0):
@@ -29,6 +52,14 @@ class CustomSquare:
         self.thickness = thickness
         self.angle = angle
         self.calculateCoords()
+        self.fillColor = DEFAULT_FILL_COLOR
+        self.strokeColor = DEFAULT_STROKE_COLOR
+
+    def setFillColor(self, hsv):
+        self.fillColor = hsv
+
+    def setStrokeColor(self, hsv):
+        self.strokeColor = hsv
         
     def calculateCoords(self):
         self.phase = self.angle / 360.0
@@ -59,7 +90,20 @@ class CustomSquare:
         self.edgeLen = edgeLen
         self.calculateCoords()
 
+    def rotateBy(self, angle):
+        self.angle += angle
+        self.calculateCoords()
+
+    def resizeBy(self, edgeLen):
+        self.edgeLen += edgeLen
+        if (self.edgeLen < 0):
+            self.edgeLen = 0
+        self.calculateCoords()
+
     def draw(self):
+        # fill(self.fillColor[0], self.fillColor[1], self.fillColor[2])
+        noFill()
+        stroke(self.strokeColor[0], self.strokeColor[1], self.strokeColor[2])
         strokeWeight(self.thickness)
         quad(self.x1, self.y1, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4)
 
@@ -67,20 +111,45 @@ class Canvas:
     def __init__(self):
         self.a = 0
         self.s = 30
-        self.test = CustomSquare(100, 100, self.s, 1, self.a)
+
+        self.s1 = CustomSquare(WINDOW_WIDTH*1/6, WINDOW_HEIGHT, self.s, 1, self.a) 
+        self.s2 = CustomSquare(WINDOW_WIDTH*2/6, WINDOW_HEIGHT, self.s, 1, self.a) 
+        self.s3 = CustomSquare(WINDOW_WIDTH*3/6, WINDOW_HEIGHT, self.s, 1, self.a) 
+        self.s4 = CustomSquare(WINDOW_WIDTH*4/6, WINDOW_HEIGHT, self.s, 1, self.a) 
+        self.s5 = CustomSquare(WINDOW_WIDTH*5/6, WINDOW_HEIGHT, self.s, 1, self.a) 
+
+        self.sizeOsc = Oscillator(0.01)
+        self.rotOsc = Oscillator(0.005)
+        self.yOsc = Oscillator(0.001)
+        self.hOsc = Oscillator(0.001)
+
+        self.squares = [
+                # self.s1, 
+                # self.s2, 
+                self.s3, 
+                # self.s4, 
+                # self.s5
+                ]
+        self.oscillators = [self.sizeOsc, self.rotOsc, self.yOsc, self.hOsc]
 
     def reset(self):
-        pass
+        background(*DEFAULT_BACKGROUND_COLOR)
 
     def update(self):
-        pass
+        for o in self.oscillators:
+            o.update()
+        
+        for sidx, s in enumerate(self.squares):
+            s.replace(s.x, s.y - 10 * self.sizeOsc.getVal())
+            s.resize(200 * self.sizeOsc.getVal())
+            s.setStrokeColor(((self.hOsc.getVal()*360)%360, 50, 100))
+            s.rotateBy(5 * self.rotOsc.getVal())
 
     def drawCanvas(self):
-        self.test.draw()
-        self.a += 1
-        self.test.resize(self.s)
-        self.test.rotate(self.a)
-        self.test.replace(mouseX, mouseY)
+        for s in self.squares:
+            s.draw()
+
+
         
 
 
@@ -101,7 +170,7 @@ def togglePause():
 
 def setup():
     size(WINDOW_WIDTH, WINDOW_HEIGHT)
-    background(0xff) # WHITE BACKGROUND
+    background(*DEFAULT_BACKGROUND_COLOR)
     colorMode(HSB, H_MAX, S_MAX, V_MAX)
 
 def mouseClicked(event):
@@ -134,10 +203,5 @@ def timeFunction(fn, desc=""):
 
 def draw():
     global lastFrameTimestamp, framePeriod
-    if (playing):
-        now = time.time()
-        if (lastFrameTimestamp == 0 or now - lastFrameTimestamp > framePeriod):
-            canvasPlayRuntime = timeFunction(canvas.update, "canvas.update")
-            lastFrameTimestamp = now
-            #DEBUGPRINT("FRAME", now)
+    canvasPlayRuntime = timeFunction(canvas.update, "canvas.update")
     canvasDrawRuntime = timeFunction(canvas.drawCanvas, "canvas.drawCanvas")
