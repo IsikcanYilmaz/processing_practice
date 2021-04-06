@@ -110,13 +110,14 @@ class CustomSquare:
 class Canvas:
     def __init__(self):
         self.a = 0
-        self.s = 30
+        self.s = 100
+        self.initx = WINDOW_WIDTH*5/6
 
-        self.s1 = CustomSquare(WINDOW_WIDTH*1/6, WINDOW_HEIGHT, self.s, 1, self.a) 
-        self.s2 = CustomSquare(WINDOW_WIDTH*2/6, WINDOW_HEIGHT, self.s, 1, self.a) 
-        self.s3 = CustomSquare(WINDOW_WIDTH*3/6, WINDOW_HEIGHT, self.s, 1, self.a) 
-        self.s4 = CustomSquare(WINDOW_WIDTH*4/6, WINDOW_HEIGHT, self.s, 1, self.a) 
-        self.s5 = CustomSquare(WINDOW_WIDTH*5/6, WINDOW_HEIGHT, self.s, 1, self.a) 
+        self.s1 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
+        self.s2 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
+        self.s3 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
+        self.s4 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
+        self.s5 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
 
         self.sizeOsc = Oscillator(0.01)
         self.rotOsc = Oscillator(0.005)
@@ -124,11 +125,11 @@ class Canvas:
         self.hOsc = Oscillator(0.001)
 
         self.squares = [
-                # self.s1, 
-                # self.s2, 
+                self.s1, 
+                self.s2, 
                 self.s3, 
-                # self.s4, 
-                # self.s5
+                self.s4, 
+                self.s5
                 ]
         self.oscillators = [self.sizeOsc, self.rotOsc, self.yOsc, self.hOsc]
 
@@ -140,12 +141,13 @@ class Canvas:
             o.update()
         
         for sidx, s in enumerate(self.squares):
-            s.replace(s.x, s.y - 10 * self.sizeOsc.getVal())
-            s.resize(200 * self.sizeOsc.getVal())
+            s.replace(self.initx - (WINDOW_WIDTH*2/6) - (WINDOW_WIDTH*2/6 * self.sizeOsc.getVal()), s.y)
+            # s.resize(200 * self.sizeOsc.getVal())
             s.setStrokeColor(((self.hOsc.getVal()*360)%360, 50, 100))
-            s.rotateBy(5 * self.rotOsc.getVal())
+            s.rotate((sidx*4) + 360 * self.rotOsc.getVal())
 
     def drawCanvas(self):
+        background(*DEFAULT_BACKGROUND_COLOR)
         for s in self.squares:
             s.draw()
 
