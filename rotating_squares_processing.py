@@ -10,6 +10,7 @@ GRID_HEIGHT = 32
 UPDATE_PER_SECOND = 30
 UPDATE_PER_SECOND_MAX = 1000
 DEBUGPRINTS = True
+DEBUGVISUALS = False 
 
 H_MAX = 360
 S_MAX = 100
@@ -44,6 +45,7 @@ class Oscillator:
     def getVal(self):
         return self.val
 
+# Square that is centered at x, y, with each edge being edgeLen length.
 class CustomSquare:
     def __init__(self, x, y, edgeLen, thickness=1, angle=0):
         self.x = x
@@ -60,6 +62,13 @@ class CustomSquare:
 
     def setStrokeColor(self, hsv):
         self.strokeColor = hsv
+
+    def setEdgeLen(self, edgeLen):
+        self.edgeLen = edgeLen
+        self.calculateCoords()
+
+    def setThickness(self, thickness):
+        self.thickness = thickness
         
     def calculateCoords(self):
         self.phase = self.angle / 360.0
@@ -106,6 +115,8 @@ class CustomSquare:
         stroke(self.strokeColor[0], self.strokeColor[1], self.strokeColor[2])
         strokeWeight(self.thickness)
         quad(self.x1, self.y1, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4)
+        if (DEBUGVISUALS):
+            circle(self.x, self.y, 1)
 
 class Canvas:
     def __init__(self):
@@ -113,25 +124,20 @@ class Canvas:
         self.s = 100
         self.initx = WINDOW_WIDTH*5/6
 
-        self.s1 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
-        self.s2 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
-        self.s3 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
-        self.s4 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
-        self.s5 = CustomSquare(self.initx, WINDOW_HEIGHT/2, self.s, 3, self.a) 
+        # lets have a 4 by 4
+        # lets have a larger area for each square
+        self.s = CustomSquare(10, 10, 10, 1)
 
-        self.sizeOsc = Oscillator(0.01)
-        self.rotOsc = Oscillator(0.005)
-        self.yOsc = Oscillator(0.001)
-        self.hOsc = Oscillator(0.001)
+        self.squares = []
+        self.numSquaresPerRow = 30
+        self.squareEdgeLen = 10
+        self.squareAreaEdgeLen = 20
+        self.xOffset = self.yOffset = 10
+        for i in range(0, self.numSquaresPerRow):
+            for j in range(0, self.numSquaresPerRow):
+                self.squares.append(CustomSquare(self.xOffset + (i * self.squareAreaEdgeLen), self.yOffset + (j * self.squareAreaEdgeLen), self.squareEdgeLen, 1))
 
-        self.squares = [
-                self.s1, 
-                self.s2, 
-                self.s3, 
-                self.s4, 
-                self.s5
-                ]
-        self.oscillators = [self.sizeOsc, self.rotOsc, self.yOsc, self.hOsc]
+        self.oscillators = []
 
     def reset(self):
         background(*DEFAULT_BACKGROUND_COLOR)
@@ -141,18 +147,29 @@ class Canvas:
             o.update()
         
         for sidx, s in enumerate(self.squares):
-            s.replace(self.initx - (WINDOW_WIDTH*2/6) - (WINDOW_WIDTH*2/6 * self.sizeOsc.getVal()), s.y)
+            # s.replace(self.initx - (WINDOW_WIDTH*2/6) - (WINDOW_WIDTH*2/6 * self.sizeOsc.getVal()), s.y)
             # s.resize(200 * self.sizeOsc.getVal())
-            s.setStrokeColor(((self.hOsc.getVal()*360)%360, 50, 100))
-            s.rotate((sidx*4) + 360 * self.rotOsc.getVal())
+            s.setStrokeColor(DEFAULT_FILL_COLOR)
+            # s.rotate((sidx*4) + 360 * self.rotOsc.getVal())
+            pass
 
     def drawCanvas(self):
         background(*DEFAULT_BACKGROUND_COLOR)
         for s in self.squares:
             s.draw()
 
-
-        
+    def mouseInput(self, x, y):
+        for s in self.squares:
+            d = dist(x, y, s.x, s.y)
+            edgeLen = sqrt(d)
+            # thickness = d/100
+            # edgeLen = (50 if edgeLen > 50 else edgeLen)
+            s.setEdgeLen(edgeLen)
+            # s.setThickness(thickness)
+    
+    def rotateAll(self, rotate):
+        for s in self.squares:
+            s.rotateBy(rotate)
 
 
 ###########################################
@@ -179,16 +196,24 @@ def mouseClicked(event):
     DEBUGPRINT("MOUSE CLICKED", event, mouseX, mouseY)
 
 def mouseDragged(event):
-    DEBUGPRINT("MOUSE MOVED", event, mouseX, mouseY)
+    DEBUGPRINT("MOUSE DRAGGED", event, mouseX, mouseY)
     try:
         if (mousePressed):
-            pass
+            canvas.mouseInput(mouseX, mouseY)
+    except Exception as e:
+        DEBUGPRINT("Mouse drag out of bounds error", e)
+
+def mouseMoved(event):
+    DEBUGPRINT("MOUSE MOVED", event, mouseX, mouseY)
+    try:
+        canvas.mouseInput(mouseX, mouseY)
     except Exception as e:
         DEBUGPRINT("Mouse drag out of bounds error", e)
 
 def mouseWheel(event):
     global framePeriod
     DEBUGPRINT("MOUSE WHEEL", event, event.getCount())
+    canvas.rotateAll(event.getCount() * 10)
 
 def keyPressed(event):
     DEBUGPRINT("KEY PRESSED", key, keyCode)

@@ -11,3 +11,6 @@ line_growth:
 
 rotating_squares:
 	java -jar ${PROCESSING_DIR}/processing-py.jar rotating_squares_processing.py
+
+waves:
+	java -jar ${PROCESSING_DIR}/processing-py.jar waves_processing.py
