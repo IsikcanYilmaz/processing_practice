@@ -19,7 +19,7 @@ V_MAX = 100
 
 tau = 2 * pi
 
-DEFAULT_FILL_COLOR = (160, 30, 100)
+DEFAULT_FILL_COLOR = (100, 40, 100)
 DEFAULT_STROKE_COLOR = (0, 0, 0)
 DEFAULT_BACKGROUND_COLOR = (0, 0, 0) # WHITE
 
@@ -133,7 +133,7 @@ class CustomSquare:
         # coeff = self.edgeLen/100 #d/WINDOW_WIDTH
         coeff = self.edgeLen * 30
         self.rotate((coeff if coeff <= 360 else 360))
-        c = ((DEFAULT_FILL_COLOR[0])%H_MAX, (DEFAULT_FILL_COLOR[1]+(coeff/10)), DEFAULT_FILL_COLOR[2])
+        c = ((DEFAULT_FILL_COLOR[0]+coeff/6), (DEFAULT_FILL_COLOR[1]+(4*self.edgeLen)), DEFAULT_FILL_COLOR[2])
         self.setStrokeColor(c)
 
     def draw(self):
@@ -235,9 +235,10 @@ def mouseMoved(event):
         DEBUGPRINT("Mouse drag out of bounds error", e)
 
 def mouseWheel(event):
-    global framePeriod
+    global framePeriod, DEFAULT_FILL_COLOR
     DEBUGPRINT("MOUSE WHEEL", event, event.getCount())
-    canvas.rotateAll(event.getCount() * 10)
+    DEFAULT_FILL_COLOR = (DEFAULT_FILL_COLOR[0]+(10*event.getCount()), DEFAULT_FILL_COLOR[1], DEFAULT_FILL_COLOR[2])
+    print(DEFAULT_FILL_COLOR)
 
 def keyPressed(event):
     DEBUGPRINT("KEY PRESSED", key, keyCode)
