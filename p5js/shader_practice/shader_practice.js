@@ -35,6 +35,8 @@ function setup()
 
 function draw()
 {
+  theShader.setUniform('u_resolution', [width, height]);
+
   // shader() sets the active shader with our shader
   shader(theShader);
 
