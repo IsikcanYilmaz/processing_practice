@@ -13,18 +13,35 @@ var DEFAULT_BACKGROUND = [0, 0, 100]
 
 ////////////////////////
 
-
+function windowResized(){
+  resizeCanvas(windowWidth, windowHeight);
+}
 
 ////////////////////////
 
+// a shader variable
+let theShader;
+
+function preload(){
+  // load the shader
+  theShader = loadShader('shader_practice.vert', 'shader_practice.frag');
+}
+
 function setup()
 {
-  createCanvas(WINDOW_HEIGHT, WINDOW_WIDTH);
-  colorMode(HSB, H_MAX, S_MAX, V_MAX);
-  background(DEFAULT_BACKGROUND);
+  createCanvas(WINDOW_HEIGHT, WINDOW_WIDTH, WEBGL);
+  noStroke()
 }
 
 function draw()
 {
+  // shader() sets the active shader with our shader
+  shader(theShader);
 
+  // rect gives us some geometry on the screen
+  rect(0,0,width,height);
+  
+  // print out the framerate
+  //  print(frameRate());
 }
+
