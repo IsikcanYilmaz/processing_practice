@@ -34,20 +34,21 @@ S_DECAY = 0.5
 V_DECAY = 0
 
 
-
-GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH / GRID_WIDTH)
+GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH/GRID_WIDTH)
 GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT / GRID_HEIGHT)
+
 
 def DEBUGPRINT(*argv):
     if (DEBUGPRINTS):
         print(argv)
+
 
 class GoLBoard:
     def __init__(self):
         self.currentFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.nextFrame = [[0 for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
         self.coloredFrame = [[(0,0,100) for x in range(GRID_WIDTH)] for y in range(GRID_HEIGHT)]
-        self.color = (H_DEFAULT,S_DEFAULT,V_DEFAULT) # HSV form
+        self.color = (H_DEFAULT,S_DEFAULT,V_DEFAULT)  # HSV form
 
     def reset(self):
         self.__init__()

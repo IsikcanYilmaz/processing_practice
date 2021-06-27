@@ -72,8 +72,8 @@ class Canvas:
 
     def drawCanvas(self):
         # Draw ellipse of random size
-        x = (WINDOW_WIDTH / 2) + (self.oscX.getVal() * 300) #mouseX
-        y = (WINDOW_WIDTH / 2) + (self.oscY.getVal() * 300) #mouseY
+        x = (WINDOW_WIDTH / 2) + (self.oscX.getVal() * 300)  # mouseX
+        y = (WINDOW_WIDTH / 2) + (self.oscY.getVal() * 300)  # mouseY
 
         if (self.oscY.getVal() > 0):
             x -= 200

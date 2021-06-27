@@ -7,7 +7,8 @@ precision mediump float;
 
 uniform vec2 resolution; // This is passed in as a uniform from the sketch.js file
 uniform float time;
-uniform float mouse;
+uniform float mouseX;
+uniform float mouseY;
 
 // this is a function that turns an rgb value that goes from 0 - 255 into 0.0 - 1.0
 vec3 rgb(float r, float g, float b){
@@ -45,9 +46,10 @@ vec4 poly(float x, float y, float size, float sides, float rotation, vec3 col){
 
 void main() {
 
-  vec2 center = resolution * 2.0; // draw the shape at the center of the screen
+  vec2 center = resolution * 0.5; // draw the shape at the center of the screen
   float size = resolution.y * 0.5; // make the shape a quarter of the screen height
-  float sides = mod(floor(mouse), 7.0) + 3.0; // slowly increase the sides, when it reaches 10 sides, go back down to 3
+  float sides = mod(floor(mouseY), 30.0) + 3.0; // slowly increase the sides, when it reaches 10 sides, go back down to 3
+  //float sides = 6.0;
   float rotation = time; // rotation is in radians, but for time it doesnt really matter
 
   // lets make our shape in the center of the screen. We have to subtract half of it's width and height just like in p5
@@ -55,15 +57,15 @@ void main() {
   float y = center.y ;
 
   // a color for the shape 
-  vec3 grn = rgb(200.0, 240.0, 200.0);
+  vec3 grn = rgb(0.0 + (mouseX*10.0), 0.0 + (mouseY*10.0), 200.0);
 
   // call our shape function with poly(x, y, sz, sides, rotation, color);
-  vec4 poly = poly(center.x , center.y, size, sides, rotation, grn);
+  vec4 p = poly(center.x , center.y, size, sides, rotation, grn);
 
   // mix the polygon with the opposite of the green color according to the shapes alpha
-  poly.rgb = mix(1.0 - grn, poly.rgb, poly.a);
+  p.rgb = mix(1.0 - grn, p.rgb, p.a);
 
   // render to screen
-  gl_FragColor = vec4(poly.rgb, 1.0);
+  gl_FragColor = vec4(p.rgb, 1.0);
 }
 
