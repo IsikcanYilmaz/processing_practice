@@ -35,10 +35,12 @@ function setup()
 
 function draw()
 {
-  theShader.setUniform('u_resolution', [width, height]);
-
   // shader() sets the active shader with our shader
   shader(theShader);
+
+  theShader.setUniform('resolution', [width, height]);
+  theShader.setUniform('mouse', map(mouseX, 0, width, 0, 7)); // map processing function. remaps number from one range to another. map(value, start1, stop1, start2, stop2)
+  theShader.setUniform('time', frameCount * 0.01);
 
   // rect gives us some geometry on the screen
   rect(0,0,width,height);
