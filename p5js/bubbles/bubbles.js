@@ -60,18 +60,72 @@ class Oscillator
   }
 }
 
-class Bubble
+class Canvas 
 {
-  constructor(x, y, direction="down", id=0)
+  constructor()
   {
+    this.bubbleWidth = 0;
+    this.h = 0;
+    this.s = 100;
+    this.v = 100;
+
+    this.sLowerLimit = 60;
+    this.sUpperLimit = 80;
+    this.sVariable = this.sUpperLimit - this.sLowerLimit;
+
+    this.sizeChangeRate = 0.0025;
+
+    this.oscW = new Oscillator(this.sizeChangeRate);
+    this.oscH = new Oscillator(0.0001, 0.8);
+    this.oscS = new Oscillator(0.0005);
+    this.oscX = new Oscillator(0);
+    this.oscY = new Oscillator(this.sizeChangeRate);
+
+    this.lastTimestamp = 0;
   }
 
-  update()
+  updateCanvas()
   {
+    this.oscW.update();
+    this.oscH.update();
+    this.oscS.update();
+    this.oscX.update();
+    this.oscY.update();
+
+    this.bubbleWidth = this.oscW.getVal() * 300;
+    this.h = Math.abs(this.oscH.getVal()) * H_MAX;
+    this.s = (this.oscS.getVal() * this.sVariable) + this.sLowerLimit;
   }
 
-  draw()
+  drawCanvas()
   {
+    var x = (WINDOW_WIDTH / 2) + (this.oscX.getVal() * 300);
+    var y = (WINDOW_HEIGHT / 2) + (this.oscY.getVal() * 300);
+    if (this.oscY.getVal() > 0)
+    {
+      x -= 200;
+      y -= 300;
+    }
+    
+    var xoffset = Math.abs((WINDOW_WIDTH / 2) - 500);
+    var yoffset = Math.abs((WINDOW_HEIGHT / 2) - 520);
+
+    noStroke();
+    fill(this.h, this.s, this.v);
+    ellipse(x + xoffset, y + yoffset, this.bubbleWidth, this.bubbleWidth);
+  
+    var beat = Math.abs(this.oscW.getVal());
+    if (beat == 1 || beat == 0)
+    {
+      var d = new Date();
+      var thisTimestamp = d.getTime();
+      if (this.lastTimestamp != 0)
+      {
+        console.log(thisTimestamp - this.lastTimestamp);
+        console.log("BEAT", beat);
+      }
+      this.lastTimestamp = thisTimestamp;
+    }
   }
 }
 
@@ -87,10 +141,19 @@ function mouseWheel()
 
 ////////////////////////
 
+myCanvas = new Canvas();
 function setup()
 {
+  createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+  colorMode(HSB, H_MAX, S_MAX, V_MAX);
+  background(DEFAULT_BACKGROUND);
+  textSize(12);
+  smooth(8);
 }
 
 function draw()
 {
+  //background(DEFAULT_BACKGROUND);
+  myCanvas.updateCanvas();
+  myCanvas.drawCanvas();
 }
