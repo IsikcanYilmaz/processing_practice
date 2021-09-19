@@ -25,7 +25,10 @@ var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
 
 var SMALLEST_ELLIPSE_WIDTH = 1;
 
-inputs = [[999,999]];
+////////////////////////
+
+var BLACK_BUBBLE = true;
+
 
 ////////////////////////
 
@@ -82,6 +85,10 @@ class Canvas
     this.oscY = new Oscillator(this.sizeChangeRate);
 
     this.lastTimestamp = 0;
+
+    this.blackingOut = false;
+    this.halfPeriodsTilBlackingOut = 8;
+    this.numHalfPeriods = 0;
   }
 
   updateCanvas()
@@ -91,10 +98,22 @@ class Canvas
     this.oscS.update();
     this.oscX.update();
     this.oscY.update();
-
-    this.bubbleWidth = this.oscW.getVal() * 300;
+ 
     this.h = Math.abs(this.oscH.getVal()) * H_MAX;
     this.s = (this.oscS.getVal() * this.sVariable) + this.sLowerLimit;
+
+    this.bubbleWidth = this.oscW.getVal() * 300;
+    if (this.blackingOut)
+    {
+      if (this.oscY.getVal() < 0)
+      {
+        this.bubbleWidth -= 3;
+      }
+      else
+      {
+        this.bubbleWidth += 3;
+      }
+    }
   }
 
   drawCanvas()
@@ -110,21 +129,48 @@ class Canvas
     var xoffset = Math.abs((WINDOW_WIDTH / 2) - 500);
     var yoffset = Math.abs((WINDOW_HEIGHT / 2) - 520);
 
+    if (this.blackingOut)
+    {
+      this.v = 0;
+    }
+    else
+    {
+      this.v = V_MAX;
+    }
+
     noStroke();
     fill(this.h, this.s, this.v);
     ellipse(x + xoffset, y + yoffset, this.bubbleWidth, this.bubbleWidth);
   
     var beat = Math.abs(this.oscW.getVal());
-    if (beat == 1 || beat == 0)
+    if (beat == 1)
     {
       var d = new Date();
       var thisTimestamp = d.getTime();
       if (this.lastTimestamp != 0)
       {
-        console.log(thisTimestamp - this.lastTimestamp);
-        console.log("BEAT", beat);
+        console.log("BEAT 1", beat);
       }
       this.lastTimestamp = thisTimestamp;
+    }
+
+    if (beat < 0.001)
+    {
+      this.numHalfPeriods++;
+      console.log("BEAT 0", beat, "NUM HALF PERIODS", this.numHalfPeriods);
+    }
+
+    if (this.numHalfPeriods > 0 && (this.numHalfPeriods % this.halfPeriodsTilBlackingOut) == 0 && !this.blackingOut)
+    {
+      console.log("BLACKING OUT");
+      this.blackingOut = true;
+    }
+
+    if (this.numHalfPeriods > 0 && (this.numHalfPeriods % (this.halfPeriodsTilBlackingOut + 2)) == 0 && this.blackingOut)
+    {
+      console.log("DONE BLACKING OUT");
+      this.blackingOut = false;
+      this.numHalfPeriods = 0;
     }
   }
 }
