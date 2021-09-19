@@ -89,6 +89,8 @@ class Canvas
     this.blackingOut = false;
     this.halfPeriodsTilBlackingOut = 8;
     this.numHalfPeriods = 0;
+
+    this.bubbleHDifference = 0;
   }
 
   updateCanvas()
@@ -139,6 +141,12 @@ class Canvas
     }
 
     noStroke();
+    
+    if (this.oscW.getVal() < 0 && this.bubbleHDifference > 0)
+    {
+      this.h += this.bubbleHDifference;
+      this.h = this.h % H_MAX;
+    }
     fill(this.h, this.s, this.v);
     ellipse(x + xoffset, y + yoffset, this.bubbleWidth, this.bubbleWidth);
   
