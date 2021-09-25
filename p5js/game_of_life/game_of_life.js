@@ -1,11 +1,11 @@
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 64 * 10;
+var WINDOW_WIDTH  = 64 * 10;
 
 var H_MAX = 100;
 var S_MAX = 100;
 var V_MAX = 100;
 
-var DEFAULT_BACKGROUND = [0, 0, 0];
+var DEFAULT_BACKGROUND = [0, 0, 100];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
 
 var DEBUGVISUALS = false;
@@ -25,8 +25,8 @@ var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
 
 ////////////////////////
 
-var GRID_HEIGHT = 16;
-var GRID_WIDTH = 16;
+var GRID_HEIGHT = 4;
+var GRID_WIDTH = 4;
 
 var H_DEFAULT = 0;
 var S_DEFAULT = 100;
@@ -38,7 +38,6 @@ var S_DECAY = 0.5;
 var V_DECAY = 0;
 
 var COLORED = true;
-var SHOW_ALIVE_CELLS = true;
 
 var UPDATE_PER_SECOND = 30;
 var UPDATE_PER_SECOND_MAX = 1000;
@@ -48,61 +47,51 @@ var GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT/GRID_HEIGHT);
 
 ////////////////////////
 
-class Oscillator 
-{
-  constructor(increment, phase=0)
-  {
-    this.increment = increment;
-    this.phase = phase;
-    this.val = Math.sin(this.phase * PI);
-  }
-
-  update()
-  {
-    this.phase += this.increment;
-    this.val = Math.sin(this.phase * PI);
-  }
-
-  setIncrement(increment)
-  {
-    this.increment = increment;
-  }
-
-  getPhase()
-  {
-    return this.phase;
-  }
-
-  getVal()
-  {
-    return this.val;
-  }
-}
-
 class GoLBoard
 {
   constructor()
   {
-    this.currentFrame = nestedArray = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => false));
-    this.nextFrame = nestedArray = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => false));
-    this.coloredFrame = nestedArray = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => false));
-    this.color = (H_DEFAULT, S_DEFAULT, V_DEFAULT);
+    this.currentFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.coloredFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => [0,0,100]));
+    this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
+    this.playing = true;
+    this.showAliveCells = true;
   }
 
   reset()
   {
-    this.constructor();
+    this.currentFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.coloredFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => [0,0,100]));
+    this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
+    this.playing = true;
+    this.showAliveCells = true;
+  }
+
+  togglePause()
+  {
+    this.playing != this.playing;
+  }
+
+  toggleShowAliveCells()
+  {
+    this.showAliveCells != this.showAliveCells;
   }
 
   setCell(x, y)
   {
+    console.log("X", x, "Y", y);
+    console.log(this.currentFrame);
+    console.log(this.currentFrame[y]);
+    console.log(this.currentFrame[y][x]);
     this.currentFrame[y][x] = 1;
-    this.coloredFrame[y][x] = (0,0,0);
+    this.coloredFrame[y][x] = [0,0,0];
   }
 
   getCell(x, y)
   {
-    return self.currentFrame[y][x];
+    return this.currentFrame[y][x];
   }
 
   getNumberOfAliveNeighbors(x, y)
@@ -139,6 +128,7 @@ class GoLBoard
         }
       }
     }
+    console.log(x, y, "ALIVE NEIGHBORS:", numAliveNeighbors);
     return numAliveNeighbors;
   }
 
@@ -150,9 +140,13 @@ class GoLBoard
     }
   }
 
-  play()
+  updateBoard()
   {
-    var counter = 0;
+    if (!this.playing)
+    {
+      return;
+    }
+    
     for (var y = 0; y < this.currentFrame.length; y++)
     {
       for (var x = 0; x < this.currentFrame[y].length; x++)
@@ -170,7 +164,7 @@ class GoLBoard
         }
 
         // is alive and 2 or 3 alive neighbors
-        if (currentValue > 0 && (numAliveNeighbors == 2  || numAliveNeighbors == 3))
+        if (currentValue > 0 && (numAliveNeighbors == 2 || numAliveNeighbors == 3))
         {
           cellLives = true;
         }
@@ -192,12 +186,12 @@ class GoLBoard
       }
     }
     this.currentFrame = this.nextFrame;
-    this.nextFrame = nestedArray = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => false));
+    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     
     var newh = (this.color[0] + H_DELTA) % H_MAX;
-    var news = self.color[1];
-    var newv = self.color[2];
-    this.color = (newh, news, newv);
+    var news = this.color[1];
+    var newv = this.color[2];
+    this.color = [newh, news, newv];
   }
 
   drawBoard()
@@ -206,41 +200,42 @@ class GoLBoard
     {
       for (var x = 0; x < GRID_WIDTH; x++)
       {
+        var cellColor = this.coloredFrame[y][x];
         if (this.getCell(x, y) == 1)
         {
-          (SHOW_ALIVE_CELLS ? fill(0, 0, 0) : fill(this.coloredframe[y][x][0], this.coloredframe[y][x][1], this.coloredframe[y][x][2]));
+          if (this.showAliveCells)
+          {
+            fill(0, 0, 0);
+          }
+          else
+          {
+            fill(cellColor[0], cellColor[1], cellColor[2]);
+          }
         }
         else
         {
-          (COLORED ? fill(this.coloredframe[y][x][0], this.coloredframe[y][x][1], this.coloredframe[y][x][2]) : fill(0, 0, 100));
+          if (COLORED)
+          {
+            fill(cellColor[0], cellColor[1], cellColor[2]);
+          }
+          else
+          {
+            fill(0, 0, 100);
+          }
         }
 
         rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
-        tmp = this.coloredFrame[y][x];
-        this.coloredFrame[y][x] = ( (tmp[0] - H_DECAY < 0) ? 0 : tmp[0] - H_DECAY, \
-                                    (tmp[1] - S_DECAY < 0) ? 0 : tmp[1] - S_DECAY, \
-                                    (tmp[2] - V_DECAY < 0) ? 0 : tmp[2] - V_DECAY );
+        this.coloredFrame[y][x] = [(cellColor[0] - H_DECAY < 0) ? 0 : (cellColor[0] - H_DECAY), 
+                                   (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
+                                   (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)];
       }
     }
   }
 }
 
-class Canvas 
-{
-  constructor()
-  {
-  }
-
-  updateCanvas()
-  {
-  }
-
-  drawCanvas()
-  {
-  }
-}
-
 ////////////////////////
+
+board = new GoLBoard();
 
 function mouseMoved()
 {
@@ -250,9 +245,57 @@ function mouseWheel()
 {
 }
 
-////////////////////////
+function mouseClicked()
+{
+  console.log("MOUSE CLICKED", mouseX, mouseY);
+  var cellX = int(mouseX / GRID_RENDER_CELL_WIDTH);
+  var cellY = int(mouseY / GRID_RENDER_CELL_HEIGHT); 
+  board.setCell(cellX, cellY);
+}
 
-myCanvas = new Canvas();
+function mouseDragged()
+{
+  console.log("MOUSE MOVED", mouseX, mouseY);
+  try
+  {
+    if (mousePressed)
+    {
+      var cellX = int(mouseX / GRID_RENDER_CELL_WIDTH);
+      var cellY = int(mouseY / GRID_RENDER_CELL_HEIGHT); 
+      board.setCell(cellX, cellY);
+    }
+  }
+  catch
+  {
+    console.log("Mouse drag out of bounds error!");
+  }
+}
+
+function keyPressed()
+{
+  console.log("KEY PRESSED", key);
+  if (key == ' ')
+  {
+    board.togglePause();
+  }
+  if (key == 'r')
+  {
+    board.reset();
+  }
+  if (key == 'a')
+  {
+    board.toggleShowAliveCells();
+  }
+  if (key == 'q')
+  {
+    board.updateBoard();
+  }
+  if (key == 'p')
+  {
+    board.printFrame();
+  }
+}
+
 function setup()
 {
   createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -264,7 +307,7 @@ function setup()
 
 function draw()
 {
-  //background(DEFAULT_BACKGROUND);
-  myCanvas.updateCanvas();
-  myCanvas.drawCanvas();
+  background(DEFAULT_BACKGROUND);
+  //board.updateBoard();
+  board.drawBoard();
 }
