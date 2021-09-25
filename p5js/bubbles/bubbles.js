@@ -27,8 +27,7 @@ var SMALLEST_ELLIPSE_WIDTH = 1;
 
 ////////////////////////
 
-var BLACK_BUBBLE = true;
-
+var BLACKOUTS_ENABLED = true;
 
 ////////////////////////
 
@@ -79,7 +78,7 @@ class Canvas
     this.sizeChangeRate = 0.0025;
 
     this.oscW = new Oscillator(this.sizeChangeRate);
-    this.oscH = new Oscillator(0.0001, 0.8);
+    this.oscH = new Oscillator(0.00015, 0.27);
     this.oscS = new Oscillator(0.0005);
     this.oscX = new Oscillator(0);
     this.oscY = new Oscillator(this.sizeChangeRate);
@@ -87,7 +86,7 @@ class Canvas
     this.lastTimestamp = 0;
 
     this.blackingOut = false;
-    this.halfPeriodsTilBlackingOut = 8;
+    this.halfPeriodsTilBlackingOut = 12;
     this.numHalfPeriods = 0;
 
     this.bubbleHDifference = 0;
@@ -168,7 +167,7 @@ class Canvas
       console.log("BEAT 0", beat, "NUM HALF PERIODS", this.numHalfPeriods);
     }
 
-    if (this.numHalfPeriods > 0 && (this.numHalfPeriods % this.halfPeriodsTilBlackingOut) == 0 && !this.blackingOut)
+    if (this.numHalfPeriods > 0 && (this.numHalfPeriods % this.halfPeriodsTilBlackingOut) == 0 && !this.blackingOut && BLACKOUTS_ENABLED)
     {
       console.log("BLACKING OUT");
       this.blackingOut = true;
