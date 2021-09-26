@@ -25,8 +25,8 @@ var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
 
 ////////////////////////
 
-var GRID_HEIGHT = 4;
-var GRID_WIDTH = 4;
+var GRID_HEIGHT = 64;
+var GRID_WIDTH = 64;
 
 var H_DEFAULT = 0;
 var S_DEFAULT = 100;
@@ -39,11 +39,15 @@ var V_DECAY = 0;
 
 var COLORED = true;
 
-var UPDATE_PER_SECOND = 30;
-var UPDATE_PER_SECOND_MAX = 1000;
+var DEFAULT_UPDATE_PER_SECOND = 1;
+var UPDATE_PER_SECOND_MAX = 30;
+var UPDATE_PER_SECOND_MIN = 0.5;
 
 var GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH/GRID_WIDTH);
 var GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT/GRID_HEIGHT);
+
+var MOUSE_WHEEL_SMOOTHING_COEFF = 0.001;
+var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
 ////////////////////////
 
@@ -57,6 +61,29 @@ class GoLBoard
     this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
     this.playing = true;
     this.showAliveCells = true;
+    this.lastUpdateTimestamp = 0;
+    this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
+  }
+
+  setFrameFrequency(hz)
+  {
+    if (hz > UPDATE_PER_SECOND_MAX)
+    {
+      hz = UPDATE_PER_SECOND_MAX;
+    }
+    if (hz < UPDATE_PER_SECOND_MIN)
+    {
+      hz = UPDATE_PER_SECOND_MIN;
+    }
+    this.frameFrequency = hz;
+    this.framePeriod = 1.0/hz;
+    this.framePeriodMs = this.framePeriod * 1000;
+    console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
+  }
+
+  getFrameFrequency()
+  {
+    return this.frameFrequency;
   }
 
   reset()
@@ -71,12 +98,20 @@ class GoLBoard
 
   togglePause()
   {
-    this.playing != this.playing;
+    this.playing = !this.playing;
+    if (this.playing)
+    {
+      console.log("UNPAUSED");
+    }
+    else
+    {
+      console.log("PAUSED");
+    }
   }
 
   toggleShowAliveCells()
   {
-    this.showAliveCells != this.showAliveCells;
+    this.showAliveCells = !this.showAliveCells;
   }
 
   setCell(x, y)
@@ -101,11 +136,11 @@ class GoLBoard
     {
       for (var xDir = -1; xDir <= 1; xDir++)
       {
-        if (xDir == yDir == 0)
+        if (xDir == 0 && yDir == 0)
         {
           continue;
         }
-        if (xDir == -1 && yDir == 0)
+        if (xDir == -1 && x == 0)
         {
           continue;
         }
@@ -128,7 +163,6 @@ class GoLBoard
         }
       }
     }
-    console.log(x, y, "ALIVE NEIGHBORS:", numAliveNeighbors);
     return numAliveNeighbors;
   }
 
@@ -146,7 +180,18 @@ class GoLBoard
     {
       return;
     }
-    
+
+    // Frame per second limiting
+    var now = Date.now();
+    if (now - this.lastUpdateTimestamp < this.framePeriodMs)
+    {
+      return;
+    }
+    else
+    {
+      this.lastUpdateTimestamp = now;
+    }
+
     for (var y = 0; y < this.currentFrame.length; y++)
     {
       for (var x = 0; x < this.currentFrame[y].length; x++)
@@ -154,7 +199,7 @@ class GoLBoard
         var neighbors = [];
         var currentValue = this.getCell(x, y);
         var numAliveNeighbors = this.getNumberOfAliveNeighbors(x, y);
-        
+
         var cellLives = false;
         // is alive and one or no neighbors
         if (currentValue > 0 && numAliveNeighbors < 2)
@@ -187,7 +232,7 @@ class GoLBoard
     }
     this.currentFrame = this.nextFrame;
     this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
-    
+
     var newh = (this.color[0] + H_DELTA) % H_MAX;
     var news = this.color[1];
     var newv = this.color[2];
@@ -226,8 +271,8 @@ class GoLBoard
 
         rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
         this.coloredFrame[y][x] = [(cellColor[0] - H_DECAY < 0) ? 0 : (cellColor[0] - H_DECAY), 
-                                   (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
-                                   (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)];
+          (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
+          (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)];
       }
     }
   }
@@ -236,13 +281,21 @@ class GoLBoard
 ////////////////////////
 
 board = new GoLBoard();
+var debugEnabled = false;
 
 function mouseMoved()
 {
 }
 
-function mouseWheel()
+function mouseWheel(event)
 {
+  var smoothDelta = event.delta * MOUSE_WHEEL_SMOOTHING_COEFF;
+  if (smoothDelta > MOUSE_WHEEL_MAX_DELTA)
+  {
+    smoothDelta = MOUSE_WHEEL_MAX_DELTA;
+  }
+  console.log("MOUSE WHEEL", event.delta, "CHANGE FREQ BY", smoothDelta);
+  board.setFrameFrequency(board.getFrameFrequency() + event.delta);
 }
 
 function mouseClicked()
@@ -250,7 +303,10 @@ function mouseClicked()
   console.log("MOUSE CLICKED", mouseX, mouseY);
   var cellX = int(mouseX / GRID_RENDER_CELL_WIDTH);
   var cellY = int(mouseY / GRID_RENDER_CELL_HEIGHT); 
-  board.setCell(cellX, cellY);
+  if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
+  {
+    board.setCell(cellX, cellY);
+  }
 }
 
 function mouseDragged()
@@ -258,16 +314,16 @@ function mouseDragged()
   console.log("MOUSE MOVED", mouseX, mouseY);
   try
   {
-    if (mousePressed)
+    var cellX = int(mouseX / GRID_RENDER_CELL_WIDTH);
+    var cellY = int(mouseY / GRID_RENDER_CELL_HEIGHT); 
+    if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
     {
-      var cellX = int(mouseX / GRID_RENDER_CELL_WIDTH);
-      var cellY = int(mouseY / GRID_RENDER_CELL_HEIGHT); 
       board.setCell(cellX, cellY);
     }
   }
-  catch
+  catch (e)
   {
-    console.log("Mouse drag out of bounds error!");
+    console.log("Mouse drag error!", e);
   }
 }
 
@@ -294,6 +350,19 @@ function keyPressed()
   {
     board.printFrame();
   }
+  if (key == 'd')
+  {
+    debugEnabled = true;
+  }
+}
+
+function keyReleased()
+{
+  console.log("KEY RELEASED", key);
+  if (key == 'd')
+  {
+    debugEnabled = false;
+  }
 }
 
 function setup()
@@ -308,6 +377,6 @@ function setup()
 function draw()
 {
   background(DEFAULT_BACKGROUND);
-  //board.updateBoard();
+  board.updateBoard();
   board.drawBoard();
 }
