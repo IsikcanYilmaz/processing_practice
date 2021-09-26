@@ -8,20 +8,8 @@ var V_MAX = 100;
 var DEFAULT_BACKGROUND = [0, 0, 100];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
 
-var DEBUGVISUALS = false;
-
 var PI  = Math.PI;
 var TAU = Math.PI * 2;
-
-var COLUMNS = 30;
-var DEFAULT_SQUARE_WIDTH = 1;
-var DEFAULT_SQUARE_AREA_WIDTH = 20;
-var DEFAULT_X_OFFSET = 100;
-var DEFAULT_Y_OFFSET = 100;
-var DEFAULT_WIDTH_UP_SPEED = 0.3;
-var DEFAULT_WIDTH_DOWN_SPEED = 0.3;
-var DEFAULT_SQUARE_THICKNESS = 3;
-var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
 
 ////////////////////////
 
@@ -117,9 +105,6 @@ class GoLBoard
   setCell(x, y)
   {
     console.log("X", x, "Y", y);
-    console.log(this.currentFrame);
-    console.log(this.currentFrame[y]);
-    console.log(this.currentFrame[y][x]);
     this.currentFrame[y][x] = 1;
     this.coloredFrame[y][x] = [0,0,0];
   }
@@ -341,10 +326,6 @@ function keyPressed()
   if (key == 'a')
   {
     board.toggleShowAliveCells();
-  }
-  if (key == 'q')
-  {
-    board.updateBoard();
   }
   if (key == 'p')
   {
