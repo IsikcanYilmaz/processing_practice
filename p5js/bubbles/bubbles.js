@@ -88,6 +88,7 @@ class Canvas
     this.blackingOut = false;
     this.halfPeriodsTilBlackingOut = 12;
     this.numHalfPeriods = 0;
+    this.numBlackoutBeats = 0;
 
     this.bubbleHDifference = 0;
   }
@@ -157,6 +158,21 @@ class Canvas
       if (this.lastTimestamp != 0)
       {
         console.log("BEAT 1", beat);
+        if (this.blackingOut)
+        {
+          this.oscW.phase = 1;
+          this.oscY.phase = 1;
+          this.numBlackoutBeats++;
+        }
+        if (this.numBlackoutBeats == 2)
+        {
+          this.numBlackoutBeats = 0;
+          this.blackingOut = false;
+          console.log("BLACKING OUT DONE");
+          this.oscW.phase = 0;
+          this.oscY.phase = 0;
+          this.numHalfPeriods = 0;
+        }
       }
       this.lastTimestamp = thisTimestamp;
     }
@@ -175,7 +191,7 @@ class Canvas
 
     if (this.numHalfPeriods > 0 && (this.numHalfPeriods % (this.halfPeriodsTilBlackingOut + 2)) == 0 && this.blackingOut)
     {
-      console.log("DONE BLACKING OUT");
+      console.log("BLACKING OUT DONE");
       this.blackingOut = false;
       this.numHalfPeriods = 0;
     }
