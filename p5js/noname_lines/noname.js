@@ -124,6 +124,7 @@ class Line
     this.turningRight = true;
 
     this.gridReference = gridReference;
+    this.gridReference.setCell(x, y, this);
   }
 
   moveForward()
@@ -138,18 +139,38 @@ class Line
       this.occupiedCells.push(coords);
       this.x = coords[0];
       this.y = coords[1];
+      this.gridReference.setCell(this.x, this.y, this);
+      return [this.x, this.y];
     }
+    return -1;
   }
 
   turn(t)
   {
     if (t != LEFT_TURN && t != RIGHT_TURN)
     {
-      return;
+      return -1;
     }
-    this.direction = (this.direction + t >= 0) ? (this.direction + t) : (directions.length + (this.direction + t));
-    this.direction = this.direction % directions.length;
-    return this.direction;
+    var movableCells = this.getMovableCells();
+    var relativeTargetDir = (this.direction + t >= 0) ? (this.direction + t) : (directions.length + (this.direction + t));
+    relativeTargetDir = relativeTargetDir % directions.length;
+    var relativeTargetCoord = this.gridReference.getCellWithDirectionCoords(this.x, this.y, relativeTargetDir);
+    var targetCoordTurnable = false;
+    for (var i = 0; i < movableCells.length; i++)
+    {
+      if (movableCells[i][0] === relativeTargetCoord[0] && movableCells[i][1] === relativeTargetCoord[1])
+      {
+        targetCoordTurnable = true;
+        break;
+      }
+    }
+
+    if (targetCoordTurnable)
+    {
+      this.direction = relativeTargetDir;
+      return this.direction;
+    }
+    return -1;
   }
 
   getMovableCells()
@@ -171,7 +192,7 @@ class Line
     for (var i = 0; i < possibleDirections.length; i++)
     {
       var c = this.gridReference.getCellWithDirection(this.x, this.y, possibleDirections[i]);
-      if (c != -1)
+      if (c == 0)
       {
         neighbors.push(this.gridReference.getCellWithDirectionCoords(this.x, this.y, possibleDirections[i]));
       }
@@ -257,9 +278,14 @@ class Grid
     return this.grid[y][x];
   }
 
+  setCell(x, y, lineReference)
+  {
+    this.grid[y][x] = lineReference; // TODO is this a good idea?
+  }
+
   getCellWithDirection(x, y, dir)
   {
-    if (dir < 0 || dir > 4)
+    if (dir < 0 || dir >= 4)
     {
       return -1;
     }
