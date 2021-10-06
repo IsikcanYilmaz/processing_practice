@@ -1,7 +1,7 @@
 var WINDOW_HEIGHT = 800;
 var WINDOW_WIDTH  = 800;
 
-var H_MAX = 360;
+var H_MAX = 100;
 var S_MAX = 100;
 var V_MAX = 100;
 
@@ -12,6 +12,10 @@ var PI  = Math.PI;
 var TAU = Math.PI * 2;
 
 ////////////////////////
+
+var DEFAULT_UPDATE_PER_SECOND = 1;
+var UPDATE_PER_SECOND_MAX = 60;
+var UPDATE_PER_SECOND_MIN = 0.5;
 
 var GRID_WIDTH = 10;
 var GRID_HEIGHT = 10;
@@ -93,6 +97,149 @@ class Oscillator
   }
 }
 
+// DIRECTIONS
+var WEST = 0;
+var NORTH = 1;
+var EAST = 2;
+var SOUTH = 3;
+var LEFT_TURN = -1;
+var RIGHT_TURN = 1;
+var directions = [WEST, NORTH, EAST, SOUTH];
+
+class Line
+{
+  constructor(x, y, gridReference)
+  {
+    this.x = x;
+    this.y = y;
+    this.length = 1;
+    this.occupiedCells = [[x,y]];
+    this.head = [x,y];
+    this.tail = [x,y];
+    this.color = [60, 80, 100];
+    this.direction = NORTH;
+
+    this.turnChance = 0.3;
+    this.rightTurnChance = 0.5;
+    this.turningRight = true;
+
+    this.gridReference = gridReference;
+  }
+
+  moveForward()
+  {
+    // See if we can move forward. if not, return -1
+    var c = this.gridReference.getCellWithDirection(this.head[0], this.head[1], this.direction);
+
+    if (c == 0)
+    {
+      var coords = this.gridReference.getCellWithDirectionCoords(this.head[0], this.head[1], this.direction);
+      this.head = coords;
+      this.occupiedCells.push(coords);
+      this.x = coords[0];
+      this.y = coords[1];
+    }
+  }
+
+  turn(t)
+  {
+    if (t != LEFT_TURN && t != RIGHT_TURN)
+    {
+      return;
+    }
+    this.direction = (this.direction + t >= 0) ? (this.direction + t) : (directions.length + (this.direction + t));
+    this.direction = this.direction % directions.length;
+    return this.direction;
+  }
+
+  getMovableCells()
+  {
+    var possibleDirections = [];
+    var neighbors = [];
+    var backidx = (this.direction - 2 >= 0) ? (this.direction - 2) : (directions.length + (this.direction - 2));
+
+    // Get our possible directions
+    for (var i = 0; i < directions.length; i++)
+    {
+      if (i != backidx)
+      {
+        possibleDirections.push(i);
+      }
+    }
+
+    // Get our possible neighbor cells
+    for (var i = 0; i < possibleDirections.length; i++)
+    {
+      var c = this.gridReference.getCellWithDirection(this.x, this.y, possibleDirections[i]);
+      if (c != -1)
+      {
+        neighbors.push(this.gridReference.getCellWithDirectionCoords(this.x, this.y, possibleDirections[i]));
+      }
+    }
+    
+    // $neighbors now have the x,y coordinates of movable cells
+    return(neighbors);
+  }
+
+  updateLine()
+  {
+    // Get potential cells we can travel to
+    var movableCells = this.getMovableCells();
+
+    // Randomly pick direction to go to
+    
+  }
+
+  drawLine()
+  {
+    // Draw all cells of the line
+    for (var c = 0; c < this.occupiedCells.length; c++)
+    {
+      var x = this.occupiedCells[c][0];
+      var y = this.occupiedCells[c][1];
+      fill(this.color[0], this.color[1], this.color[2]);
+      rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
+    }
+    
+    // Draw movable cells
+    var movableCells = this.getMovableCells();
+    for (var c = 0; c < movableCells.length; c++)
+    {
+      var x = movableCells[c][0];
+      var y = movableCells[c][1];
+      fill(this.color[0], this.color[1]/2, this.color[2]);
+      rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
+    }
+
+    // Draw direction indicator
+    {
+      var x = this.head[0];
+      var y = this.head[1];
+      var xPix = x * CELL_WIDTH_PX + (CELL_WIDTH_PX / 2);
+      var yPix = y * CELL_HEIGHT_PX + (CELL_HEIGHT_PX / 2);
+      switch (this.direction)
+      {
+        case WEST:
+          xPix -= CELL_WIDTH_PX/2;
+          break;
+        case NORTH:
+          yPix -= CELL_HEIGHT_PX/2;
+          break;
+        case EAST:
+          xPix += CELL_WIDTH_PX/2;
+          break;
+        case SOUTH:
+          yPix += CELL_HEIGHT_PX/2;
+          break;
+        default:
+      }
+      strokeWeight(10);
+      point(xPix, yPix);
+    }
+
+  }
+}
+
 class Grid
 {
   constructor()
@@ -103,11 +250,59 @@ class Grid
 
   getCell(x, y)
   {
+    if (x > GRID_WIDTH - 1 || x < 0 || y > GRID_HEIGHT - 1 || y < 0)
+    {
+      return -1;
+    }
     return this.grid[y][x];
+  }
+
+  getCellWithDirection(x, y, dir)
+  {
+    if (dir < 0 || dir > 4)
+    {
+      return -1;
+    }
+    else
+    {
+      var coords = this.getCellWithDirectionCoords(x, y, dir);
+      return this.getCell(coords[0], coords[1]);
+    }
+  }
+
+  getCellWithDirectionCoords(x, y, dir)
+  {
+    switch(dir)
+    {
+      case WEST:
+        {
+          return [x-1, y];
+        }
+      case NORTH:
+        {
+          return [x, y-1];
+        }
+      case EAST:
+        {
+          return [x+1, y];
+        }
+      case SOUTH:
+        {
+          return [x, y+1];
+        }
+      default:
+        {
+          return -1;
+        }
+    }
   }
 
   updateGrid()
   {
+    if (this.lines.length == 0)
+    {
+      this.lines.push(new Line(3, 3, this));
+    }
   }
 
   drawGrid()
@@ -117,31 +312,16 @@ class Grid
       for (var x = 0; x < GRID_WIDTH; x++)
       {
         stroke(0, 0, 0);
+        strokeWeight(1);
+        fill(0, 0, 100);
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
       }
     }
-  }
-}
 
-class Line
-{
-  constructor(x, y)
-  {
-    this.x = x;
-    this.y = y;
-    this.length = 1;
-    this.occupiedCells = [[x,y]];
-    this.head = [x,y];
-    this.tail = [x,y];
-  }
-
-  moveForwardRandom()
-  {
-    
-  }
-
-  updateLine()
-  {
+    for (var l = 0; l < this.lines.length; l++)
+    {
+      this.lines[l].drawLine();
+    }
   }
 }
 
@@ -150,15 +330,41 @@ class Canvas
   constructor()
   {
     this.grid = new Grid();
+    this.lastUpdateTimestamp = 0;
+    this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
   }
 
-  updateCanvas()
+  setFrameFrequency(hz)
   {
+    if (hz > UPDATE_PER_SECOND_MAX)
+    {
+      hz = UPDATE_PER_SECOND_MAX;
+    }
+    if (hz < UPDATE_PER_SECOND_MIN)
+    {
+      hz = UPDATE_PER_SECOND_MIN;
+    }
+    this.frameFrequency = hz;
+    this.framePeriod = 1.0/hz;
+    this.framePeriodMs = this.framePeriod * 1000;
+    console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
+  }
+
+  updateDrawCanvas()
+  {
+    // Frame per second limiting
+    var now = Date.now();
+    if (now - this.lastUpdateTimestamp < this.framePeriodMs)
+    {
+      return;
+    }
+    else
+    {
+      this.lastUpdateTimestamp = now;
+    }
+
+    background(DEFAULT_BACKGROUND);
     this.grid.updateGrid();
-  }
-
-  drawCanvas()
-  {
     this.grid.drawGrid();
   }
 }
@@ -188,6 +394,5 @@ function setup()
 function draw()
 {
   //background(DEFAULT_BACKGROUND);
-  myCanvas.updateCanvas();
-  myCanvas.drawCanvas();
+  myCanvas.updateDrawCanvas();
 }
