@@ -5,7 +5,7 @@ var H_MAX = 100;
 var S_MAX = 100;
 var V_MAX = 100;
 
-var DEFAULT_BACKGROUND = [0, 0, 0];
+var DEFAULT_BACKGROUND = [0, 0, 100];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
 
 var PI  = Math.PI;
@@ -13,15 +13,17 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var DEFAULT_UPDATE_PER_SECOND = 1;
-var UPDATE_PER_SECOND_MAX = 60;
+var DEFAULT_UPDATE_PER_SECOND = 160;
+var UPDATE_PER_SECOND_MAX = 160;
 var UPDATE_PER_SECOND_MIN = 0.5;
 
-var GRID_WIDTH = 10;
-var GRID_HEIGHT = 10;
+var GRID_WIDTH = 200;
+var GRID_HEIGHT = 200;
 
 var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
+
+var DEBUG = false;
 
 ////////////////////////
 
@@ -108,7 +110,7 @@ var directions = [WEST, NORTH, EAST, SOUTH];
 
 class Line
 {
-  constructor(x, y, gridReference)
+  constructor(x, y, gridReference, dir=NORTH, color=null)
   {
     this.x = x;
     this.y = y;
@@ -116,8 +118,8 @@ class Line
     this.occupiedCells = [[x,y]];
     this.head = [x,y];
     this.tail = [x,y];
-    this.color = [60, 80, 100];
-    this.direction = NORTH;
+    this.direction = dir;
+    this.blocked = false;
 
     this.turnChance = 0.3;
     this.rightTurnChance = 0.5;
@@ -125,6 +127,21 @@ class Line
 
     this.gridReference = gridReference;
     this.gridReference.setCell(x, y, this);
+
+    if (color == null)
+    {
+      this.color = [int(Math.random() * H_MAX), int(Math.random() * S_MAX), int(Math.random() * V_MAX/2 + V_MAX/2)];
+    }
+    else
+    {
+      this.color = color;
+    }
+  }
+
+  canMoveForward()
+  {
+    var c = this.gridReference.getCellWithDirection(this.head[0], this.head[1], this.direction);
+    return c == 0;
   }
 
   moveForward()
@@ -199,65 +216,85 @@ class Line
     }
     
     // $neighbors now have the x,y coordinates of movable cells
+    if (neighbors.length == 0)
+    {
+      this.blocked = true;
+    }
     return(neighbors);
   }
 
   updateLine()
   {
-    // Get potential cells we can travel to
-    var movableCells = this.getMovableCells();
-
-    // Randomly pick direction to go to
-    
+    if (this.blocked)
+    {
+      return -1;
+    }
+    if (this.canMoveForward())
+    {
+      this.moveForward();
+    }
+    else
+    {
+      this.turn(RIGHT_TURN);
+    }
   }
 
   drawLine()
   {
+    if (this.blocked)
+    {
+      return -1;
+    }
     // Draw all cells of the line
-    for (var c = 0; c < this.occupiedCells.length; c++)
+    for (var c = this.occupiedCells.length - 1; c >= 0; c--)
     {
       var x = this.occupiedCells[c][0];
       var y = this.occupiedCells[c][1];
       fill(this.color[0], this.color[1], this.color[2]);
+      strokeWeight(0);
       rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
     }
     
-    // Draw movable cells
-    var movableCells = this.getMovableCells();
-    for (var c = 0; c < movableCells.length; c++)
+    if (DEBUG)
     {
-      var x = movableCells[c][0];
-      var y = movableCells[c][1];
-      fill(this.color[0], this.color[1]/2, this.color[2]);
-      rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
-    }
-
-    // Draw direction indicator
-    {
-      var x = this.head[0];
-      var y = this.head[1];
-      var xPix = x * CELL_WIDTH_PX + (CELL_WIDTH_PX / 2);
-      var yPix = y * CELL_HEIGHT_PX + (CELL_HEIGHT_PX / 2);
-      switch (this.direction)
+      // Draw movable cells
+      var movableCells = this.getMovableCells();
+      for (var c = 0; c < movableCells.length; c++)
       {
-        case WEST:
-          xPix -= CELL_WIDTH_PX/2;
-          break;
-        case NORTH:
-          yPix -= CELL_HEIGHT_PX/2;
-          break;
-        case EAST:
-          xPix += CELL_WIDTH_PX/2;
-          break;
-        case SOUTH:
-          yPix += CELL_HEIGHT_PX/2;
-          break;
-        default:
+        var x = movableCells[c][0];
+        var y = movableCells[c][1];
+        fill(this.color[0], this.color[1]/2, this.color[2]);
+        strokeWeight(0);
+        rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
       }
-      strokeWeight(10);
-      point(xPix, yPix);
-    }
 
+      // Draw direction indicator
+      {
+        var x = this.head[0];
+        var y = this.head[1];
+        var xPix = x * CELL_WIDTH_PX + (CELL_WIDTH_PX / 2);
+        var yPix = y * CELL_HEIGHT_PX + (CELL_HEIGHT_PX / 2);
+        switch (this.direction)
+        {
+          case WEST:
+            xPix -= CELL_WIDTH_PX/2;
+            break;
+          case NORTH:
+            yPix -= CELL_HEIGHT_PX/2;
+            break;
+          case EAST:
+            xPix += CELL_WIDTH_PX/2;
+            break;
+          case SOUTH:
+            yPix += CELL_HEIGHT_PX/2;
+            break;
+          default:
+        }
+        strokeWeight(3);
+        point(xPix, yPix);
+      }
+    }
+  return 1;
   }
 }
 
@@ -267,6 +304,7 @@ class Grid
   {
     this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.lines = [];
+    this.lineSpawnChance = 0.25;
   }
 
   getCell(x, y)
@@ -323,11 +361,34 @@ class Grid
     }
   }
 
+  spawnLineInRandomCoord()
+  {
+    var randX = int(Math.random() * GRID_WIDTH);
+    var randY = int(Math.random() * GRID_HEIGHT);
+    if (this.getCell(randX, randY) == 0)
+    {
+      var dir = int(Math.random() * directions.length);
+      this.lines.push(new Line(randX, randY, this, dir));
+    }
+  }
+
   updateGrid()
   {
     if (this.lines.length == 0)
     {
-      this.lines.push(new Line(3, 3, this));
+      this.spawnLineInRandomCoord();
+    }
+    else
+    {
+      // By chance spawn a new line
+      if (Math.random() < this.lineSpawnChance)
+      {
+        this.spawnLineInRandomCoord();
+      }
+      for (var l = 0; l < this.lines.length; l++)
+      {
+        this.lines[l].updateLine();
+      }
     }
   }
 
@@ -338,12 +399,15 @@ class Grid
       for (var x = 0; x < GRID_WIDTH; x++)
       {
         stroke(0, 0, 0);
-        strokeWeight(1);
+        strokeWeight(0);
         fill(0, 0, 100);
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
       }
     }
+  }
 
+  drawLines()
+  {
     for (var l = 0; l < this.lines.length; l++)
     {
       this.lines[l].drawLine();
@@ -389,9 +453,10 @@ class Canvas
       this.lastUpdateTimestamp = now;
     }
 
-    background(DEFAULT_BACKGROUND);
+    //background(DEFAULT_BACKGROUND);
     this.grid.updateGrid();
-    this.grid.drawGrid();
+    //this.grid.drawGrid();
+    this.grid.drawLines();
   }
 }
 
