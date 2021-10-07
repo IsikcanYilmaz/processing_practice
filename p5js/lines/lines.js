@@ -27,6 +27,7 @@ var DEBUG_ALLOWED_CELLS = false;
 var DEBUG_DIRECTION = false;
 
 var ONLY_DRAW_HEAD = true;
+var NUM_UPDATES_PER_FRAME = (ONLY_DRAW_HEAD ? 1 : 100);
 
 ////////////////////////
 
@@ -125,6 +126,7 @@ class Line
     this.direction = dir;
     this.blocked = false;
     this.reversed = false;
+    this.drawnCells = 0;
 
     this.turnChance = 0.3;
     this.rightTurnChance = 0.5;
@@ -136,7 +138,7 @@ class Line
     if (color == null)
     {
       var h = int(Math.random() * H_MAX);
-      var s = int(Math.random() * S_MAX * 0.8);
+      var s = int((Math.random() * 0.7 + 0.2) * S_MAX);
       var v = int(Math.random() * V_MAX/2 + V_MAX/2);
       this.color = [h, s, v];
     }
@@ -158,8 +160,11 @@ class Line
     var tmp = this.tail;
     this.head = [this.tail[0], this.tail[1]];
     this.tail = [tmp[0], tmp[1]];
+    this.x = this.head[0];
+    this.y = this.head[1];
     this.occupiedCells.reverse();
     this.direction = (this.initialDirection - 2 >= 0) ? (this.initialDirection - 2) : (directions.length + (this.initialDirection - 2));
+    this.reversed = true;
   }
 
   moveForward()
@@ -234,7 +239,7 @@ class Line
     }
     
     // $neighbors now have the x,y coordinates of movable cells
-    if (neighbors.length == 0)
+    if (neighbors.length == 0 && this.reversed)
     {
       this.blocked = true;
     }
@@ -267,7 +272,7 @@ class Line
     }
     else
     {
-      if (this.blocked)
+      if (this.blocked && this.occupiedCells.length == this.drawnCells)
       {
         return -1;
       }
@@ -277,8 +282,16 @@ class Line
         var x = this.occupiedCells[c][0];
         var y = this.occupiedCells[c][1];
         fill(this.color[0], this.color[1], this.color[2]);
-        strokeWeight(0);
+        if (DEBUG_ALLOWED_CELLS)
+        {
+          strokeWeight(1);
+        }
+        else
+        {
+          strokeWeight(0);
+        }
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
+        this.drawnCells++;
       }
     }
     
@@ -299,30 +312,29 @@ class Line
     if (DEBUG_DIRECTION)
     {
       // Draw direction indicator
+      var x = this.head[0];
+      var y = this.head[1];
+      var xPix = x * CELL_WIDTH_PX + (CELL_WIDTH_PX / 2);
+      var yPix = y * CELL_HEIGHT_PX + (CELL_HEIGHT_PX / 2);
+      switch (this.direction)
       {
-        var x = this.head[0];
-        var y = this.head[1];
-        var xPix = x * CELL_WIDTH_PX + (CELL_WIDTH_PX / 2);
-        var yPix = y * CELL_HEIGHT_PX + (CELL_HEIGHT_PX / 2);
-        switch (this.direction)
-        {
-          case WEST:
-            xPix -= CELL_WIDTH_PX/2;
-            break;
-          case NORTH:
-            yPix -= CELL_HEIGHT_PX/2;
-            break;
-          case EAST:
-            xPix += CELL_WIDTH_PX/2;
-            break;
-          case SOUTH:
-            yPix += CELL_HEIGHT_PX/2;
-            break;
-          default:
-        }
-        strokeWeight(3);
-        point(xPix, yPix);
+        case WEST:
+          xPix -= CELL_WIDTH_PX/2;
+          break;
+        case NORTH:
+          yPix -= CELL_HEIGHT_PX/2;
+          break;
+        case EAST:
+          xPix += CELL_WIDTH_PX/2;
+          break;
+        case SOUTH:
+          yPix += CELL_HEIGHT_PX/2;
+          break;
+        default:
       }
+      strokeWeight(CELL_WIDTH_PX/4);
+      fill(0, 0, 0);
+      point(xPix, yPix);
     }
   return 1;
   }
@@ -334,7 +346,7 @@ class Grid
   {
     this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.lines = [];
-    this.lineSpawnChance = 0.5;
+    this.lineSpawnChance = 0.10;
     this.cellSettingsDuringThisIter = 0;
     this.allCellsFull = false;
   }
@@ -513,7 +525,10 @@ class Canvas
     }
 
     //background(DEFAULT_BACKGROUND);
-    this.grid.updateGrid();
+    for (var i = 0; i < NUM_UPDATES_PER_FRAME; i++)
+    {
+      this.grid.updateGrid();
+    }
     //this.grid.drawGrid();
     this.grid.drawLines();
   }
