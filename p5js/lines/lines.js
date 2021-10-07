@@ -98,6 +98,12 @@ class Line
     this.reversed = true;
   }
 
+  startUndoing()
+  {
+    this.undoing = true;
+    this.blocked = false;
+  }
+
   moveForward()
   {
     // See if we can move forward. if not, return -1
@@ -192,7 +198,7 @@ class Line
   }
 
   drawLine()
-  {    
+  {
     if (ONLY_DRAW_HEAD)
     {
       var x = this.head[0];
@@ -343,7 +349,7 @@ class Grid
     this.undoingPhase = true;
     for (var l = 0; l < this.lines.length; l++)
     {
-      this.lines[l].undoing = true;
+      this.lines[l].startUndoing();
     }
   }
 
@@ -375,6 +381,10 @@ class Grid
       }
       this.allCellsFull = true;
       console.log("All cells are occupied");
+      if (UNDO_AFTER_COMPLETION)
+      {
+        this.startUndoingPhase();
+      }
     }
   }
 
