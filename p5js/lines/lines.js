@@ -137,7 +137,7 @@ class Line
 
     if (color == null)
     {
-      var h = int(Math.random() * H_MAX);
+      var h = int((Math.random() * 0.2 + 0.8) * H_MAX);
       var s = int((Math.random() * 0.7 + 0.2) * S_MAX);
       var v = int(Math.random() * V_MAX/2 + V_MAX/2);
       this.color = [h, s, v];
@@ -346,7 +346,7 @@ class Grid
   {
     this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.lines = [];
-    this.lineSpawnChance = 0.10;
+    this.lineSpawnChance = 0.99;
     this.cellSettingsDuringThisIter = 0;
     this.allCellsFull = false;
   }
