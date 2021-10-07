@@ -20,6 +20,8 @@ var UPDATE_PER_SECOND_MIN = 0.5;
 var GRID_WIDTH = 100;
 var GRID_HEIGHT = 100;
 
+var DEFAULT_LINE_SPAWN_CHANCE = 0.5;
+
 var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
@@ -29,7 +31,9 @@ var DEBUG_DIRECTION = false;
 var ONLY_DRAW_HEAD = true;
 var NUM_UPDATES_PER_FRAME = (ONLY_DRAW_HEAD ? 1 : 100);
 
-var UNDO_AFTER_COMPLETION = true;
+var UNDO_AFTER_COMPLETION = false;
+var RESET_GRID_AFTER_COMPLETION = true;
+var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 2000;
 
 ////////////////////////
 
@@ -68,8 +72,8 @@ class Line
 
     if (color == null)
     {
-      var h = int((Math.random() * 0.3 + 0.7) * H_MAX);
-      var s = int((Math.random() * 0.7 + 0.2) * S_MAX);
+      var h = int((Math.random() * 0.3 + 0.6) * H_MAX);
+      var s = int((Math.random() * 0.5 + 0.3) * S_MAX);
       var v = int(Math.random() * V_MAX/2 + V_MAX/2);
       this.color = [h, s, v];
     }
@@ -281,12 +285,7 @@ class Grid
 {
   constructor()
   {
-    this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
-    this.lines = [];
-    this.lineSpawnChance = 0.99;
-    this.cellSettingsDuringThisIter = 0;
-    this.allCellsFull = false;
-    this.undoingPhase = false;
+    this.reset();
   }
 
   getCell(x, y)
@@ -381,6 +380,8 @@ class Grid
       }
       this.allCellsFull = true;
       console.log("All cells are occupied");
+      this.completionTimestamp = Date.now();
+
       if (UNDO_AFTER_COMPLETION)
       {
         this.startUndoingPhase();
@@ -392,7 +393,14 @@ class Grid
   { 
     if (this.allCellsFull)
     {
-      return 0;
+      if ((RESET_GRID_AFTER_COMPLETION) && (Date.now() - this.completionTimestamp > RESET_GRID_AFTER_COMPLETION_LATENCY_MS))
+      {
+        this.reset();
+      }
+      else
+      {
+        return 0;
+      }
     }
     if (this.lines.length == 0)
     {
@@ -434,6 +442,16 @@ class Grid
     {
       this.lines[l].drawLine();
     }
+  }
+  
+  reset()
+  {
+    this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.lines = [];
+    this.lineSpawnChance = DEFAULT_LINE_SPAWN_CHANCE;
+    this.cellSettingsDuringThisIter = 0;
+    this.allCellsFull = false;
+    this.undoingPhase = false;
   }
 }
 
@@ -482,6 +500,12 @@ class Canvas
     //this.grid.drawGrid();
     this.grid.drawLines();
   }
+
+  reset()
+  {
+    this.grid.reset();
+    background(DEFAULT_BACKGROUND);
+  }
 }
 
 ////////////////////////
@@ -494,7 +518,14 @@ function mouseWheel()
 {
 }
 
-////////////////////////
+function keyPressed()
+{
+  console.log("KEY PRESSED", key);
+  if (key == 'r')
+  {
+    myCanvas.reset();
+  }
+}
 
 myCanvas = new Canvas();
 function setup()
