@@ -1,5 +1,5 @@
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 900;
+var WINDOW_WIDTH  = 900;
 
 var H_MAX = 100;
 var S_MAX = 100;
@@ -121,8 +121,10 @@ class Line
     this.occupiedCells = [[x,y]];
     this.head = [x,y];
     this.tail = [x,y];
+    this.initialDirection = dir;
     this.direction = dir;
     this.blocked = false;
+    this.reversed = false;
 
     this.turnChance = 0.3;
     this.rightTurnChance = 0.5;
@@ -149,6 +151,15 @@ class Line
   {
     var c = this.gridReference.getCellWithDirection(this.head[0], this.head[1], this.direction);
     return c == 0;
+  }
+
+  reverseLine()
+  {
+    var tmp = this.tail;
+    this.head = [this.tail[0], this.tail[1]];
+    this.tail = [tmp[0], tmp[1]];
+    this.occupiedCells.reverse();
+    this.direction = (this.initialDirection - 2 >= 0) ? (this.initialDirection - 2) : (directions.length + (this.initialDirection - 2));
   }
 
   moveForward()
@@ -234,9 +245,12 @@ class Line
   {
     if (this.moveForward() == -1)
     {
-      if (this.turn(RIGHT_TURN) == -1);
+      if (this.turn(RIGHT_TURN) == -1)
       {
-        this.turn(LEFT_TURN);
+        if (this.turn(LEFT_TURN) == -1)
+        {
+          this.reverseLine();
+        }
       }
     }
   }
@@ -320,7 +334,9 @@ class Grid
   {
     this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.lines = [];
-    this.lineSpawnChance = 0.99;
+    this.lineSpawnChance = 0.5;
+    this.cellSettingsDuringThisIter = 0;
+    this.allCellsFull = false;
   }
 
   getCell(x, y)
@@ -334,6 +350,7 @@ class Grid
 
   setCell(x, y, lineReference)
   {
+    this.cellSettingsDuringThisIter++;
     this.grid[y][x] = lineReference; // TODO is this a good idea?
   }
 
@@ -377,19 +394,43 @@ class Grid
     }
   }
 
-  spawnLineInRandomCoord()
+  spawnLineInRandomCoord(force=false)
   {
+    var cellFound = false;
     var randX = int(Math.random() * GRID_WIDTH);
     var randY = int(Math.random() * GRID_HEIGHT);
+    var dir = int(Math.random() * directions.length);
     if (this.getCell(randX, randY) == 0)
     {
-      var dir = int(Math.random() * directions.length);
       this.lines.push(new Line(randX, randY, this, dir));
+      cellFound = true;
+    }
+
+    if (force && !cellFound)
+    {
+      // If we couldnt randomly find an empty cell and are being forced, go thru all the cells and pick the first empty cell
+      for (var x = 0; x < GRID_WIDTH; x++)
+      {
+        for (var y = 0; y < GRID_HEIGHT; y++)
+        {
+          if (this.getCell(x, y) == 0)
+          {
+            this.lines.push(new Line(x, y, this, dir));
+            return 0;
+          }
+        }
+      }
+      this.allCellsFull = true;
+      console.log("All cells are occupied");
     }
   }
 
   updateGrid()
-  {
+  { 
+    if (this.allCellsFull)
+    {
+      return 0;
+    }
     if (this.lines.length == 0)
     {
       this.spawnLineInRandomCoord();
@@ -397,15 +438,17 @@ class Grid
     else
     {
       // By chance spawn a new line
-      if (Math.random() < this.lineSpawnChance)
-      {
-        this.spawnLineInRandomCoord();
-      }
       for (var l = 0; l < this.lines.length; l++)
       {
         this.lines[l].updateLine();
       }
+      if (Math.random() < this.lineSpawnChance)
+      {
+        var force = (this.cellSettingsDuringThisIter == 0);
+        this.spawnLineInRandomCoord(force);
+      }
     }
+    this.cellSettingsDuringThisIter = 0;
   }
 
   drawGrid()
