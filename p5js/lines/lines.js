@@ -136,7 +136,7 @@ class Line
     if (color == null)
     {
       var h = int(Math.random() * H_MAX);
-      var s = int(Math.random() * S_MAX);
+      var s = int(Math.random() * S_MAX * 0.8);
       var v = int(Math.random() * V_MAX/2 + V_MAX/2);
       this.color = [h, s, v];
     }
