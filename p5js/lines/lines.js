@@ -17,8 +17,8 @@ var DEFAULT_UPDATE_PER_SECOND = 999;
 var UPDATE_PER_SECOND_MAX = 999;
 var UPDATE_PER_SECOND_MIN = 0.5;
 
-var GRID_WIDTH = 200;
-var GRID_HEIGHT = 200;
+var GRID_WIDTH = 100;
+var GRID_HEIGHT = 100;
 
 var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
@@ -29,79 +29,9 @@ var DEBUG_DIRECTION = false;
 var ONLY_DRAW_HEAD = true;
 var NUM_UPDATES_PER_FRAME = (ONLY_DRAW_HEAD ? 1 : 100);
 
+var UNDO_AFTER_COMPLETION = true;
+
 ////////////////////////
-
-// OSCILLATOR TYPES
-var SIN = 1;
-var TRIANGLE = 2;
-
-class Oscillator 
-{
-  constructor(increment, phase=0, type=SIN)
-  {
-    this.increment = increment;
-    this.phase = phase;
-    this.type = type;
-    this.val = 0;
-    this.directionUp = true;
-  }
-
-  update()
-  {
-    switch(this.type){
-      case SIN:
-        {
-          this.phase += this.increment;
-          this.val = Math.sin(this.phase * PI);
-          break;
-        }
-      case TRIANGLE:
-        {
-          this.phase += 2 * this.increment;
-
-          // phase :0 +  1  -  2  -  3  +  4
-          // val   :0    1     0    -1     0 
-          var phaseNormalized = this.phase % 4;
-          if (phaseNormalized >= 0 && phaseNormalized < 1)
-          {
-            this.val = this.phase % 1;
-          }
-          else if (phaseNormalized >= 1 && phaseNormalized < 2)
-          {
-            this.val = 1 - (this.phase % 1);
-          }
-          else if (phaseNormalized >= 2 && phaseNormalized < 3)
-          {
-            this.val = 0 - (this.phase % 1);
-          }
-          else
-          {
-            this.val = -1 + (this.phase % 1);
-          }
-          break;
-        }
-      default:
-        {
-          break;
-        }
-    }
-  }
-
-  setIncrement(increment)
-  {
-    this.increment = increment;
-  }
-
-  getPhase()
-  {
-    return this.phase;
-  }
-
-  getVal()
-  {
-    return this.val;
-  }
-}
 
 // DIRECTIONS
 var WEST = 0;
@@ -127,6 +57,7 @@ class Line
     this.blocked = false;
     this.reversed = false;
     this.drawnCells = 0;
+    this.undoing = false;
 
     this.turnChance = 0.3;
     this.rightTurnChance = 0.5;
@@ -137,7 +68,7 @@ class Line
 
     if (color == null)
     {
-      var h = int((Math.random() * 0.2 + 0.8) * H_MAX);
+      var h = int((Math.random() * 0.3 + 0.7) * H_MAX);
       var s = int((Math.random() * 0.7 + 0.2) * S_MAX);
       var v = int(Math.random() * V_MAX/2 + V_MAX/2);
       this.color = [h, s, v];
@@ -349,6 +280,7 @@ class Grid
     this.lineSpawnChance = 0.99;
     this.cellSettingsDuringThisIter = 0;
     this.allCellsFull = false;
+    this.undoingPhase = false;
   }
 
   getCell(x, y)
@@ -403,6 +335,15 @@ class Grid
         {
           return -1;
         }
+    }
+  }
+
+  startUndoingPhase()
+  {
+    this.undoingPhase = true;
+    for (var l = 0; l < this.lines.length; l++)
+    {
+      this.lines[l].undoing = true;
     }
   }
 
@@ -511,7 +452,7 @@ class Canvas
     console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
   }
 
-  updateDrawCanvas()
+  updateAndDrawCanvas()
   {
     // Frame per second limiting
     var now = Date.now();
@@ -524,7 +465,6 @@ class Canvas
       this.lastUpdateTimestamp = now;
     }
 
-    //background(DEFAULT_BACKGROUND);
     for (var i = 0; i < NUM_UPDATES_PER_FRAME; i++)
     {
       this.grid.updateGrid();
@@ -559,5 +499,5 @@ function setup()
 function draw()
 {
   //background(DEFAULT_BACKGROUND);
-  myCanvas.updateDrawCanvas();
+  myCanvas.updateAndDrawCanvas();
 }
