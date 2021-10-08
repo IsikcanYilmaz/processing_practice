@@ -21,6 +21,9 @@ var GRID_WIDTH = 100;
 var GRID_HEIGHT = 100;
 
 var DEFAULT_LINE_SPAWN_CHANCE = 0.5;
+var RANDOM_SPAWN_CHANCE_AFTER_RESET = true;
+var LINE_SPAWN_CHANCE_CEIL = 0.99;
+var LINE_SPAWN_CHANCE_FLOOR = 0.5;
 
 var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
@@ -35,6 +38,23 @@ var UNDO_AFTER_COMPLETION = false;
 var RESET_GRID_AFTER_COMPLETION = true;
 var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 2000;
 
+var CHANGING_COLOR = true;
+var DEFAULT_H_RANGE = 0.30;
+var DEFAULT_H_BASE  = 0.53;
+var DEFAULT_S_RANGE = 0.5;
+var DEFAULT_S_BASE  = 0.4;
+var DEFAULT_V_RANGE = V_MAX/2;
+var DEFAULT_V_BASE  = V_MAX/2;
+
+var H_CEIL = 1;
+var H_FLOOR = 0;
+var H_RANGE_CEIL = 0.3;
+var S_CEIL = 0.9;
+var S_FLOOR = 0.3;
+var S_RANGE_CEIL = 0.8;
+var V_CEIL = 1;
+var V_FLOOR = 0;
+
 ////////////////////////
 
 // DIRECTIONS
@@ -45,6 +65,63 @@ var SOUTH = 3;
 var LEFT_TURN = -1;
 var RIGHT_TURN = 1;
 var directions = [WEST, NORTH, EAST, SOUTH];
+
+class ColorGen
+{
+  // Range and Base variables are to be between 0 and 1
+  constructor(hRange, hBase, sRange, sBase, vRange=DEFAULT_V_RANGE, vBase=DEFAULT_V_BASE)
+  {
+    this.hRange = hRange;
+    this.hBase = hBase;
+    this.sRange = sRange;
+    this.sBase = sBase;
+    this.vRange = vRange;
+    this.vBase = vBase;
+  }
+
+  moveColor()
+  {
+    this.hBase = (this.hBase + 0.05) % 1;
+  }
+
+  randomizeH()
+  {
+    this.hBase = Math.random() * (H_CEIL - H_FLOOR) + H_FLOOR;
+    this.hRange = Math.random();
+    if (this.hBase + this.hRange > H_CEIL)
+    {
+      this.hRange = H_CEIL - this.hBase;
+    }
+    if (this.hRange > H_RANGE_CEIL)
+    {
+      this.hRange = H_RANGE_CEIL;
+    }
+    console.log("Color Gen new hBase:", this.hBase, "new hRange:", this.hRange);
+  }
+
+  randomizeS()
+  {
+    this.sBase = Math.random() * (S_CEIL - S_FLOOR) + S_FLOOR;
+    this.sRange = Math.random();
+    if (this.sBase + this.sRange > S_CEIL)
+    {
+      this.sRange = S_CEIL - this.sBase;
+    }
+    if (this.sRange > S_RANGE_CEIL)
+    {
+      this.sRange = S_RANGE_CEIL;
+    }
+    console.log("Color Gen new sBase:", this.sBase, "new sRange:", this.sRange);
+  }
+
+  getRandomColor()
+  {
+    var h = int((Math.random() * this.hRange + this.hBase) * H_MAX);
+    var s = int((Math.random() * this.sRange + this.sBase) * S_MAX);
+    var v = int((Math.random() * this.vRange + this.vBase) * V_MAX);
+    return [h, s, v];
+  }
+}
 
 class Line
 {
@@ -72,8 +149,8 @@ class Line
 
     if (color == null)
     {
-      var h = int((Math.random() * 0.3 + 0.6) * H_MAX);
-      var s = int((Math.random() * 0.5 + 0.3) * S_MAX);
+      var h = int((Math.random() * 0.3 + 0.5) * H_MAX);
+      var s = int((Math.random() * 0.7 + 0.1) * S_MAX);
       var v = int(Math.random() * V_MAX/2 + V_MAX/2);
       this.color = [h, s, v];
     }
@@ -286,6 +363,8 @@ class Grid
   constructor()
   {
     this.reset();
+    this.colorGen = new ColorGen(DEFAULT_H_RANGE, DEFAULT_H_BASE, DEFAULT_S_RANGE, DEFAULT_S_BASE);
+    this.lineSpawnChance = DEFAULT_LINE_SPAWN_CHANCE;
   }
 
   getCell(x, y)
@@ -358,9 +437,10 @@ class Grid
     var randX = int(Math.random() * GRID_WIDTH);
     var randY = int(Math.random() * GRID_HEIGHT);
     var dir = int(Math.random() * directions.length);
+    var color = this.colorGen.getRandomColor();
     if (this.getCell(randX, randY) == 0)
     {
-      this.lines.push(new Line(randX, randY, this, dir));
+      this.lines.push(new Line(randX, randY, this, dir, color));
       cellFound = true;
     }
 
@@ -373,7 +453,7 @@ class Grid
         {
           if (this.getCell(x, y) == 0)
           {
-            this.lines.push(new Line(x, y, this, dir));
+            this.lines.push(new Line(x, y, this, dir, color));
             return 0;
           }
         }
@@ -395,6 +475,10 @@ class Grid
     {
       if ((RESET_GRID_AFTER_COMPLETION) && (Date.now() - this.completionTimestamp > RESET_GRID_AFTER_COMPLETION_LATENCY_MS))
       {
+        if (CHANGING_COLOR)
+        {
+          this.colorGen.randomizeS();
+        }
         this.reset();
       }
       else
@@ -448,7 +532,11 @@ class Grid
   {
     this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.lines = [];
-    this.lineSpawnChance = DEFAULT_LINE_SPAWN_CHANCE;
+    if (RANDOM_SPAWN_CHANCE_AFTER_RESET)
+    {
+      this.lineSpawnChance = Math.random() * (LINE_SPAWN_CHANCE_CEIL - LINE_SPAWN_CHANCE_FLOOR) + LINE_SPAWN_CHANCE_FLOOR;
+      console.log("New line spawn chance", this.lineSpawnChance);
+    }
     this.cellSettingsDuringThisIter = 0;
     this.allCellsFull = false;
     this.undoingPhase = false;
