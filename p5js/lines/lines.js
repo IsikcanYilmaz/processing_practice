@@ -1,5 +1,5 @@
-var WINDOW_HEIGHT = 900;
-var WINDOW_WIDTH  = 900;
+var WINDOW_HEIGHT = 1000;
+var WINDOW_WIDTH  = 1000;
 
 var H_MAX = 100;
 var S_MAX = 100;
@@ -30,13 +30,14 @@ var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
 var DEBUG_ALLOWED_CELLS = false;
 var DEBUG_DIRECTION = false;
+var DEBUG_SINGLE_LINE = false;
 
 var ONLY_DRAW_HEAD = true;
 var NUM_UPDATES_PER_FRAME = (ONLY_DRAW_HEAD ? 1 : 100);
 
 var UNDO_AFTER_COMPLETION = false;
 var RESET_GRID_AFTER_COMPLETION = true;
-var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 3000;
+var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 4000;
 
 var CHANGING_COLOR = false;
 var DEFAULT_H_RANGE = 0.30;
@@ -123,9 +124,89 @@ class ColorGen
   }
 }
 
+
+////////////////////////
+
+// BEHAVIORS
+var BEHAVIOR_BASIC = 0;
+var BEHAVIOR_ZIG_ZAG = 1;
+
+class LineBehavior
+{
+  constructor(behaviorIdx=BEHAVIOR_BASIC)
+  {
+    this.behaviorIdx = behaviorIdx;
+    this.behaviorInitArray = [this.behaviorInitBasicForwardRightLeftReverse, this.behaviorInitZigZag];
+    this.behaviorInitArray[this.behaviorIdx]();
+    this.behaviorArray = [this.behaviorBasicForwardRightLeftReverse, this.behaviorZigZag];
+    this.zigzagStage = 0;
+  }
+
+  behaviorInitBasicForwardRightLeftReverse()
+  {
+  }
+
+  behaviorBasicForwardRightLeftReverse(lineReference)
+  {
+    if (lineReference.moveForward() == -1)
+    {
+      if (lineReference.turn(RIGHT_TURN) == -1)
+      {
+        if (lineReference.turn(LEFT_TURN) == -1)
+        {
+          lineReference.reverseLine();
+        }
+      }
+    }
+  }
+
+  behaviorInitZigZag()
+  {
+    //this.zigzagStage = 0;
+    console.log(this.zigzagStage);
+  }
+
+  behaviorZigZag(lineReference)
+  {
+    console.log("ZIGZAG", this.zigzagStage);
+    switch(this.zigzagStage)
+    {
+      case 0:
+      case 1:
+      case 3:
+      case 4:
+        {
+          lineReference.moveForward();
+          break;
+        }
+      case 2:
+        {
+          lineReference.turn(LEFT_TURN);
+          break;
+        }
+      case 5:
+        {
+          lineReference.turn(RIGHT_TURN);
+          break;
+        }
+      default:
+        {
+          break;
+        }
+    }
+    this.zigzagStage++;
+    this.zigzagStage = this.zigzagStage % 6;
+  }
+
+  behaviorFunction(lineReference)
+  {
+    this.behaviorArray[this.behaviorIdx](lineReference);
+  }
+}
+
 class Line
 {
-  constructor(x, y, gridReference, dir=NORTH, color=null)
+  constructor(x, y, gridReference, dir=NORTH, color=null, behaviorIdx=BEHAVIOR_BASIC)
   {
     this.x = x;
     this.y = y;
@@ -158,6 +239,10 @@ class Line
     {
       this.color = color;
     }
+  
+    this.behaviorIdx = behaviorIdx;
+    this.behavior = new LineBehavior(this.behaviorIdx);
+
     this.drawLine();
   }
 
@@ -266,16 +351,7 @@ class Line
 
   updateLine()
   {
-    if (this.moveForward() == -1)
-    {
-      if (this.turn(RIGHT_TURN) == -1)
-      {
-        if (this.turn(LEFT_TURN) == -1)
-        {
-          this.reverseLine();
-        }
-      }
-    }
+    this.behavior.behaviorFunction(this);
   }
 
   drawLine()
@@ -321,7 +397,7 @@ class Line
       {
         var x = movableCells[c][0];
         var y = movableCells[c][1];
-        fill(this.color[0], this.color[1]/2, this.color[2]);
+        fill(this.color[0], this.color[1]/5, 0);
         strokeWeight(0);
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX); 
       }
@@ -433,6 +509,10 @@ class Grid
 
   spawnLineInRandomCoord(force=false)
   {
+    if (DEBUG_SINGLE_LINE && this.lines.length == 1)
+    {
+      return;
+    }
     var cellFound = false;
     var randX = int(Math.random() * GRID_WIDTH);
     var randY = int(Math.random() * GRID_HEIGHT);
