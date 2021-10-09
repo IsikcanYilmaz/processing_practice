@@ -127,82 +127,11 @@ class ColorGen
 
 ////////////////////////
 
+
+
 // BEHAVIORS
 var BEHAVIOR_BASIC = 0;
 var BEHAVIOR_ZIG_ZAG = 1;
-
-class LineBehavior
-{
-  constructor(behaviorIdx=BEHAVIOR_BASIC)
-  {
-    this.behaviorIdx = behaviorIdx;
-    this.behaviorInitArray = [this.behaviorInitBasicForwardRightLeftReverse, this.behaviorInitZigZag];
-    this.behaviorInitArray[this.behaviorIdx]();
-    this.behaviorArray = [this.behaviorBasicForwardRightLeftReverse, this.behaviorZigZag];
-    this.zigzagStage = 0;
-  }
-
-  behaviorInitBasicForwardRightLeftReverse()
-  {
-  }
-
-  behaviorBasicForwardRightLeftReverse(lineReference)
-  {
-    if (lineReference.moveForward() == -1)
-    {
-      if (lineReference.turn(RIGHT_TURN) == -1)
-      {
-        if (lineReference.turn(LEFT_TURN) == -1)
-        {
-          lineReference.reverseLine();
-        }
-      }
-    }
-  }
-
-  behaviorInitZigZag()
-  {
-    //this.zigzagStage = 0;
-    console.log(this.zigzagStage);
-  }
-
-  behaviorZigZag(lineReference)
-  {
-    console.log("ZIGZAG", this.zigzagStage);
-    switch(this.zigzagStage)
-    {
-      case 0:
-      case 1:
-      case 3:
-      case 4:
-        {
-          lineReference.moveForward();
-          break;
-        }
-      case 2:
-        {
-          lineReference.turn(LEFT_TURN);
-          break;
-        }
-      case 5:
-        {
-          lineReference.turn(RIGHT_TURN);
-          break;
-        }
-      default:
-        {
-          break;
-        }
-    }
-    this.zigzagStage++;
-    this.zigzagStage = this.zigzagStage % 6;
-  }
-
-  behaviorFunction(lineReference)
-  {
-    this.behaviorArray[this.behaviorIdx](lineReference);
-  }
-}
 
 class Line
 {
@@ -241,7 +170,8 @@ class Line
     }
   
     this.behaviorIdx = behaviorIdx;
-    this.behavior = new LineBehavior(this.behaviorIdx);
+    this.behaviorArray = [this.behaviorBasicForwardRightLeft, this.behaviorZigZag];
+    this.behaviorFunction = this.behaviorArray[this.behaviorIdx];
 
     this.drawLine();
   }
@@ -316,6 +246,57 @@ class Line
     return -1;
   }
 
+  // BEHAVIORS /////////
+  behaviorBasicForwardRightLeft()
+  {
+    if (this.moveForward() == -1)
+    {
+      if (this.turn(RIGHT_TURN) == -1)
+      {
+        if (this.turn(LEFT_TURN) == -1)
+        {
+          this.reverseLine();
+        }
+      }
+    }
+  }
+
+  behaviorZigZag()
+  {
+    if (this.zigZagStage == undefined)
+    {
+      this.zigZagStage = 0;
+      this.lastTurnDirection = RIGHT_TURN;
+    }
+    
+    switch(this.zigZagStage % 8)
+    {
+      case 1:
+        {
+          this.turn(LEFT_TURN);
+          break;
+        }
+      case 3:
+        {
+          this.turn(RIGHT_TURN);
+          break;
+        }
+      case 5:
+        {
+          this.turn(RIGHT_TURN);
+          break;
+        }
+      case 7:
+        {
+          this.turn(LEFT_TURN);
+          break;
+        }
+    }
+    this.moveForward();
+    this.zigZagStage++;
+  }
+
+
   getMovableCells()
   {
     var possibleDirections = [];
@@ -351,7 +332,7 @@ class Line
 
   updateLine()
   {
-    this.behavior.behaviorFunction(this);
+    this.behaviorFunction();
   }
 
   drawLine()
