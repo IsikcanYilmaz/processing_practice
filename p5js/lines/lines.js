@@ -36,6 +36,7 @@ var ONLY_DRAW_HEAD = true;
 var NUM_UPDATES_PER_FRAME = (ONLY_DRAW_HEAD ? 1 : 100);
 
 var UNDO_AFTER_COMPLETION = false;
+var NUM_COMPLETIONS_TO_UNDO = 3;
 var RESET_GRID_AFTER_COMPLETION = true;
 var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 4000;
 
@@ -66,6 +67,13 @@ var SOUTH = 3;
 var LEFT_TURN = -1;
 var RIGHT_TURN = 1;
 var directions = [WEST, NORTH, EAST, SOUTH];
+
+// BEHAVIORS
+var BEHAVIOR_BASIC = 0;
+var BEHAVIOR_ZIG_ZAG = 1;
+var BEHAVIOR_WHIRLY = 2;
+
+var BEHAVIOR_CHANCES = [1, 0.0, 0.0];
 
 class ColorGen
 {
@@ -129,12 +137,7 @@ class ColorGen
 
 
 
-// BEHAVIORS
-var BEHAVIOR_BASIC = 0;
-var BEHAVIOR_ZIG_ZAG = 1;
-var BEHAVIOR_WHIRLY = 2;
 
-var BEHAVIOR_CHANCES = [1, 0.0, 0.0];
 
 class Line
 {
@@ -151,7 +154,6 @@ class Line
     this.blocked = false;
     this.reversed = false;
     this.drawnCells = 0;
-    this.undoing = false;
 
     this.turnChance = 0.3;
     this.rightTurnChance = 0.5;
@@ -195,12 +197,6 @@ class Line
     this.occupiedCells.reverse();
     this.direction = (this.initialDirection - 2 >= 0) ? (this.initialDirection - 2) : (directions.length + (this.initialDirection - 2));
     this.reversed = true;
-  }
-
-  startUndoing()
-  {
-    this.undoing = true;
-    this.blocked = false;
   }
 
   moveForward()
@@ -388,6 +384,12 @@ class Line
     this.behaviorFunction();
   }
 
+  undoAndErase()
+  {
+    var cellToErase = this.head; 
+    // TODO
+  }
+
   drawLine()
   {
     if (ONLY_DRAW_HEAD)
@@ -475,6 +477,7 @@ class Grid
     this.reset();
     this.colorGen = new ColorGen(DEFAULT_H_RANGE, DEFAULT_H_BASE, DEFAULT_S_RANGE, DEFAULT_S_BASE);
     this.lineSpawnChance = DEFAULT_LINE_SPAWN_CHANCE;
+    this.numCompletions = 0;
   }
 
   getCell(x, y)
@@ -532,15 +535,6 @@ class Grid
     }
   }
 
-  startUndoingPhase()
-  {
-    this.undoingPhase = true;
-    for (var l = 0; l < this.lines.length; l++)
-    {
-      this.lines[l].startUndoing();
-    }
-  }
-
   spawnLineInRandomCoord(force=false)
   {
     if (DEBUG_SINGLE_LINE && this.lines.length == 1)
@@ -592,49 +586,75 @@ class Grid
       this.allCellsFull = true;
       console.log("All cells are occupied");
       this.completionTimestamp = Date.now();
+      this.numCompletions++;
 
-      if (UNDO_AFTER_COMPLETION)
+      if (UNDO_AFTER_COMPLETION && this.numCompletions == NUM_COMPLETIONS_TO_UNDO)
       {
-        this.startUndoingPhase();
+        this.undoingPhase = true;
+        this.numCompletions = 0;
       }
     }
   }
 
   updateGrid()
-  { 
-    if (this.allCellsFull)
+  {
+    if (this.undoingPhase)
     {
-      if ((RESET_GRID_AFTER_COMPLETION) && (Date.now() - this.completionTimestamp > RESET_GRID_AFTER_COMPLETION_LATENCY_MS))
+      var numBlankLines = 0;
+      for (var l = 0; l < this.lines.length; l++)
       {
-        if (CHANGING_COLOR)
+        if (this.lines[l].occupiedCells.length == 0)
         {
-          this.colorGen.randomizeS();
+          numBlankLines++;
         }
+        else
+        {
+          this.lines[l].undoAndErase();
+        }
+      }
+
+      // Check if undo phase is done
+      if (numBlankLines == this.lines.length)
+      {
         this.reset();
       }
-      else
-      {
-        return 0;
-      }
-    }
-    if (this.lines.length == 0)
-    {
-      this.spawnLineInRandomCoord();
     }
     else
     {
-      // By chance spawn a new line
-      for (var l = 0; l < this.lines.length; l++)
+      if (this.allCellsFull)
       {
-        this.lines[l].updateLine();
+        if ((RESET_GRID_AFTER_COMPLETION) && (Date.now() - this.completionTimestamp > RESET_GRID_AFTER_COMPLETION_LATENCY_MS))
+        {
+          if (CHANGING_COLOR)
+          {
+            this.colorGen.randomizeS();
+          }
+          this.reset();
+        }
+        else
+        {
+          return 0;
+        }
       }
-      if (Math.random() < this.lineSpawnChance)
+      if (this.lines.length == 0)
       {
-        var force = (this.cellSettingsDuringThisIter == 0);
-        this.spawnLineInRandomCoord(force);
+        this.spawnLineInRandomCoord();
       }
+      else
+      {
+        // By chance spawn a new line
+        for (var l = 0; l < this.lines.length; l++)
+        {
+          this.lines[l].updateLine();
+        }
+        if (Math.random() < this.lineSpawnChance)
+        {
+          var force = (this.cellSettingsDuringThisIter == 0);
+          this.spawnLineInRandomCoord(force);
+        }
+      }
+      this.cellSettingsDuringThisIter = 0;
     }
-    this.cellSettingsDuringThisIter = 0;
   }
 
   drawGrid()
