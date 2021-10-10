@@ -20,7 +20,7 @@ var UPDATE_PER_SECOND_MIN = 0.5;
 var GRID_WIDTH = 100;
 var GRID_HEIGHT = 100;
 
-var DEFAULT_LINE_SPAWN_CHANCE = 0.5;
+var DEFAULT_LINE_SPAWN_CHANCE = 0.99;
 var RANDOM_SPAWN_CHANCE_AFTER_RESET = false;
 var LINE_SPAWN_CHANCE_CEIL = 0.99;
 var LINE_SPAWN_CHANCE_FLOOR = 0.5;
@@ -132,6 +132,9 @@ class ColorGen
 // BEHAVIORS
 var BEHAVIOR_BASIC = 0;
 var BEHAVIOR_ZIG_ZAG = 1;
+var BEHAVIOR_WHIRLY = 2;
+
+var BEHAVIOR_CHANCES = [1, 0.0, 0.0];
 
 class Line
 {
@@ -170,7 +173,7 @@ class Line
     }
   
     this.behaviorIdx = behaviorIdx;
-    this.behaviorArray = [this.behaviorBasicForwardRightLeft, this.behaviorZigZag];
+    this.behaviorArray = [this.behaviorBasicForwardRightLeft, this.behaviorZigZag, this.behaviorWhirly];
     this.behaviorFunction = this.behaviorArray[this.behaviorIdx];
 
     this.drawLine();
@@ -246,6 +249,15 @@ class Line
     return -1;
   }
 
+  // BEHAVIOR UTILS ////
+  setBehavior(idx)
+  {
+    if (idx < BEHAVIORS.length)
+    {
+      this.behaviorIdx = idx;
+    }
+  }
+
   // BEHAVIORS /////////
   behaviorBasicForwardRightLeft()
   {
@@ -296,6 +308,47 @@ class Line
     this.zigZagStage++;
   }
 
+  behaviorWhirly()
+  {
+    if (this.whirlyDirection == undefined)
+    {
+      this.whirlyDirection = ((Math.random() < 0.5) ? LEFT_TURN : RIGHT_TURN);
+      this.whirlyStage = 0;
+      this.whirlyForwardLength = 2;
+      this.whirlyPitch = int(this.whirlyForwardLength / 2);
+    }
+
+    if (this.blocked)
+    {
+      return;
+    }
+
+    if (this.whirlyStage % this.whirlyForwardLength == 0 && this.whirlyStage != 0)
+    {
+      if (this.turn(this.whirlyDirection) == -1)
+      {
+        this.whirlyDirection = (this.whirlyDirection == LEFT_TURN ? RIGHT_TURN : LEFT_TURN); 
+      }
+      this.whirlyStage = 0;
+      this.whirlyForwardLength += this.whirlyPitch;
+    }
+    else
+    {
+      if (this.canMoveForward())
+      {
+        this.moveForward();
+      }
+      else
+      {
+        //this.setBehavior(BEHAVIOR_BASIC);
+        this.whirlyDirection = (this.whirlyDirection == LEFT_TURN ? RIGHT_TURN : LEFT_TURN); 
+        this.whirlyStage = 0;
+      }
+    }
+    this.whirlyStage++;
+  }
+
+  ///////////////////////
 
   getMovableCells()
   {
@@ -499,9 +552,26 @@ class Grid
     var randY = int(Math.random() * GRID_HEIGHT);
     var dir = int(Math.random() * directions.length);
     var color = this.colorGen.getRandomColor();
+    var behDiceRoll = Math.random();
+    var beh = BEHAVIOR_WHIRLY;
+    for (var b = 0; b < BEHAVIOR_CHANCES.length; b++)
+    {
+      if (behDiceRoll > BEHAVIOR_CHANCES[b])
+      {
+        behDiceRoll -= BEHAVIOR_CHANCES[b];
+        continue;
+      }
+      else if (BEHAVIOR_CHANCES[b] != 0)
+      {
+        beh = b;
+        break;
+      }
+      beh = b;
+    }
+
     if (this.getCell(randX, randY) == 0)
     {
-      this.lines.push(new Line(randX, randY, this, dir, color));
+      this.lines.push(new Line(randX, randY, this, dir, color, beh));
       cellFound = true;
     }
 
@@ -514,7 +584,7 @@ class Grid
         {
           if (this.getCell(x, y) == 0)
           {
-            this.lines.push(new Line(x, y, this, dir, color));
+            this.lines.push(new Line(x, y, this, dir, color, beh));
             return 0;
           }
         }
