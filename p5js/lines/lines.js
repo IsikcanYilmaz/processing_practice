@@ -31,12 +31,17 @@ var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 var DEBUG_ALLOWED_CELLS = false;
 var DEBUG_DIRECTION = false;
 var DEBUG_SINGLE_LINE = false;
+var DEBUG_CELL_IDS = false;
+var DEBUG_UNDO_CELL_IDS = false;
 
 var ONLY_DRAW_HEAD = true;
 var NUM_UPDATES_PER_FRAME = (ONLY_DRAW_HEAD ? 1 : 100);
 
-var UNDO_AFTER_COMPLETION = false;
-var NUM_COMPLETIONS_TO_UNDO = 3;
+var UNDO_AFTER_COMPLETION = true;
+var NUM_CELLS_TO_UNDO_PER_ITER = 2;
+var NUM_COMPLETIONS_TO_UNDO = 1;
+var LATENCY_AFTER_UNDONE_MS = 1000;
+
 var RESET_GRID_AFTER_COMPLETION = true;
 var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 4000;
 
@@ -132,13 +137,6 @@ class ColorGen
   }
 }
 
-
-////////////////////////
-
-
-
-
-
 class Line
 {
   constructor(x, y, gridReference, dir=NORTH, color=null, behaviorIdx=BEHAVIOR_BASIC)
@@ -173,7 +171,7 @@ class Line
     {
       this.color = color;
     }
-  
+
     this.behaviorIdx = behaviorIdx;
     this.behaviorArray = [this.behaviorBasicForwardRightLeft, this.behaviorZigZag, this.behaviorWhirly];
     this.behaviorFunction = this.behaviorArray[this.behaviorIdx];
@@ -263,7 +261,14 @@ class Line
       {
         if (this.turn(LEFT_TURN) == -1)
         {
-          this.reverseLine();
+          if (!this.reversed)
+          {
+            this.reverseLine();
+          }
+          else
+          {
+            this.blocked = true;
+          }
         }
       }
     }
@@ -276,7 +281,7 @@ class Line
       this.zigZagStage = 0;
       this.lastTurnDirection = RIGHT_TURN;
     }
-    
+
     switch(this.zigZagStage % 8)
     {
       case 1:
@@ -370,30 +375,55 @@ class Line
         neighbors.push(this.gridReference.getCellWithDirectionCoords(this.x, this.y, possibleDirections[i]));
       }
     }
-    
-    // $neighbors now have the x,y coordinates of movable cells
-    if (neighbors.length == 0 && this.reversed)
-    {
-      this.blocked = true;
-    }
+
     return(neighbors);
   }
 
   updateLine()
   {
-    this.behaviorFunction();
+    if (!this.blocked)
+    {
+      this.behaviorFunction();
+    }
   }
 
-  undoAndErase()
+  undoAndErase(numCellsToErase = 1)
   {
-    var cellToErase = this.head; 
-    // TODO
+    for (var c = 0; c < numCellsToErase; c++)
+    {
+      if (this.occupiedCells.length == 0)
+      {
+        return;
+      }
+      var cellToEraseIdx = this.occupiedCells.length - 1;
+      var cellToErase = this.occupiedCells[cellToEraseIdx];
+      var x = cellToErase[0];
+      var y = cellToErase[1];
+      fill(0, 0, 100); // WHITE
+      strokeWeight(0);
+      rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX);
+      this.occupiedCells = this.occupiedCells.splice(0, cellToEraseIdx);
+      this.gridReference.numOccupiedCells--;
+
+      if (DEBUG_UNDO_CELL_IDS)
+      {
+        fill(0, 100, 100);
+        textSize(50);
+        text(this.occupiedCells.length, x * CELL_WIDTH_PX + CELL_WIDTH_PX/2, y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2);
+        textSize(20);
+        text([x, y], x * CELL_WIDTH_PX + CELL_WIDTH_PX/2 + 30, y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2 + 30);
+      }
+    }
   }
 
   drawLine()
   {
     if (ONLY_DRAW_HEAD)
     {
+      if (this.blocked)
+      {
+        return -1;
+      }
       var x = this.head[0];
       var y = this.head[1];
       fill(this.color[0], this.color[1], this.color[2]);
@@ -424,7 +454,7 @@ class Line
         this.drawnCells++;
       }
     }
-    
+
     if (DEBUG_ALLOWED_CELLS)
     {
       // Draw movable cells
@@ -466,7 +496,16 @@ class Line
       fill(0, 0, 0);
       point(xPix, yPix);
     }
-  return 1;
+
+    if (DEBUG_CELL_IDS)
+    {
+      fill(0, 0, 0);
+      textSize(50);
+      text(this.occupiedCells.length, this.x * CELL_WIDTH_PX + CELL_WIDTH_PX/2, this.y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2);
+      textSize(20);
+      text([this.x, this.y], this.x * CELL_WIDTH_PX + CELL_WIDTH_PX/2 + 30, this.y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2 + 30);
+    }
+    return 1;
   }
 }
 
@@ -492,6 +531,7 @@ class Grid
   setCell(x, y, lineReference)
   {
     this.cellSettingsDuringThisIter++;
+    this.numOccupiedCells++;
     this.grid[y][x] = lineReference; // TODO is this a good idea?
   }
 
@@ -584,20 +624,20 @@ class Grid
         }
       }
       this.allCellsFull = true;
-      console.log("All cells are occupied");
       this.completionTimestamp = Date.now();
       this.numCompletions++;
-
-      if (UNDO_AFTER_COMPLETION && this.numCompletions == NUM_COMPLETIONS_TO_UNDO)
-      {
-        this.undoingPhase = true;
-        this.numCompletions = 0;
-      }
+      console.log("Drawing complete. Num completions", this.numCompletions);
     }
   }
 
   updateGrid()
   {
+    if (UNDO_AFTER_COMPLETION && this.numCompletions == NUM_COMPLETIONS_TO_UNDO && (Date.now() - this.completionTimestamp > RESET_GRID_AFTER_COMPLETION_LATENCY_MS))
+    {
+      this.undoingPhase = true;
+      this.numCompletions = 0;
+      console.log("Beginning undo phase");
+    }
     if (this.undoingPhase)
     {
       var numBlankLines = 0;
@@ -609,14 +649,22 @@ class Grid
         }
         else
         {
-          this.lines[l].undoAndErase();
+          this.lines[l].undoAndErase(NUM_CELLS_TO_UNDO_PER_ITER);
         }
       }
 
       // Check if undo phase is done
-      if (numBlankLines == this.lines.length)
+      if (this.numOccupiedCells == 0 && !this.undoingPhaseComplete)
       {
-        this.reset();
+        console.log("Undoing phase done");
+        this.undoingPhaseComplete = true;
+        this.undoCompletionTimestamp = Date.now();
+      }
+
+      // Wait LATENCY_AFTER_UNDONE_MS
+      if (this.undoingPhaseComplete && Date.now() - this.undoCompletionTimestamp > LATENCY_AFTER_UNDONE_MS)
+      {
+        myCanvas.reset();
       }
     }
     else
@@ -691,6 +739,8 @@ class Grid
     this.cellSettingsDuringThisIter = 0;
     this.allCellsFull = false;
     this.undoingPhase = false;
+    this.undoingPhaseComplete = false;
+    this.numOccupiedCells = 0;
   }
 }
 
@@ -736,8 +786,11 @@ class Canvas
     {
       this.grid.updateGrid();
     }
-    //this.grid.drawGrid();
-    this.grid.drawLines();
+
+    if (!this.grid.undoingPhase)
+    {
+      this.grid.drawLines();
+    }
   }
 
   reset()
@@ -760,9 +813,18 @@ function mouseWheel()
 function keyPressed()
 {
   console.log("KEY PRESSED", key);
-  if (key == 'r')
+  switch(key)
   {
-    myCanvas.reset();
+    case 'r':
+      {
+        myCanvas.reset();
+        break;
+      }
+    case ' ':
+      {
+        myCanvas.grid.undoingPhase = true;
+        break;
+      }
   }
 }
 
