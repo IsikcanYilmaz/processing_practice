@@ -30,7 +30,7 @@ var SMALLEST_ELLIPSE_WIDTH = 1;
 var SAVE_FRAMES = false;
 
 var FRAME_LIMITING = true;
-var FRAME_PER_SECOND = 100;
+var FRAME_PER_SECOND = 30;
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var DEBUG_LINES = true;
@@ -100,6 +100,9 @@ class Canvas
     this.numBlackoutBeats = 0;
 
     this.bubbleHDifference = 0;
+
+    this.xoffset = Math.abs((WINDOW_WIDTH / 2) - 500);
+    this.yoffset = Math.abs((WINDOW_HEIGHT / 2) - 520);
   }
 
   updateCanvas()
@@ -129,17 +132,14 @@ class Canvas
 
   drawCanvas()
   {
-    var x = (WINDOW_WIDTH / 2) + (this.oscX.getVal() * 300);
-    var y = (WINDOW_HEIGHT / 2) + (this.oscY.getVal() * 300);
+    this.x = (WINDOW_WIDTH / 2) + (this.oscX.getVal() * 300);
+    this.y = (WINDOW_HEIGHT / 2) + (this.oscY.getVal() * 300);
     if (this.oscY.getVal() > 0)
     {
-      x -= 200;
-      y -= 300;
+      this.x -= 200;
+      this.y -= 300;
     }
     
-    var xoffset = Math.abs((WINDOW_WIDTH / 2) - 500);
-    var yoffset = Math.abs((WINDOW_HEIGHT / 2) - 520);
-
     if (this.blackingOut)
     {
       this.v = 0;
@@ -157,7 +157,7 @@ class Canvas
       this.h = this.h % H_MAX;
     }
     fill(this.h, this.s, this.v);
-    ellipse(x + xoffset, y + yoffset, this.bubbleWidth, this.bubbleWidth);
+    ellipse(this.x + this.xoffset, this.y + this.yoffset, this.bubbleWidth, this.bubbleWidth);
   
     var beat = Math.abs(this.oscW.getVal());
     if (beat == 1)
@@ -210,7 +210,21 @@ class Canvas
   {
     if (DEBUG_FPS)
     {
-      console.log(fps);
+      fill(0, 0, 100);
+      rect(0, WINDOW_HEIGHT - 20, 20, 20);
+      fill(0, 0, 0);
+      text(str(fps), 0, WINDOW_HEIGHT - 5);
+    }
+
+    if (DEBUG_LINES)
+    {
+      stroke(0, 0, 100);
+      line(this.x + this.xoffset, 0, this.x + this.xoffset, WINDOW_HEIGHT);
+      //line(0, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
+      fill(0, 0, 100);
+      rect(0, WINDOW_HEIGHT - 40, 50, 20);
+      fill(0, 0, 0);
+      text(str(this.x+this.xoffset) + " " + str(this.y+this.yoffset), 0, WINDOW_HEIGHT - 30);
     }
   }
 }
