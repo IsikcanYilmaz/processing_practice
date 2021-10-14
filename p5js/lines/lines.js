@@ -13,7 +13,14 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
+var SAVE_FRAMES = false;
+var NUM_FULL_DRAWINGS_TO_SAVE = 4;
+
 var DEFAULT_UPDATE_PER_SECOND = 999;
+if (SAVE_FRAMES)
+{
+  DEFAULT_UPDATE_PER_SECOND = 8;
+}
 var UPDATE_PER_SECOND_MAX = 999;
 var UPDATE_PER_SECOND_MIN = 0.5;
 
@@ -44,6 +51,12 @@ var LATENCY_AFTER_UNDONE_MS = 1000;
 
 var RESET_GRID_AFTER_COMPLETION = true;
 var RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 4000;
+
+if (SAVE_FRAMES)
+{
+  LATENCY_AFTER_UNDONE_MS = 4000;
+  RESET_GRID_AFTER_COMPLETION_LATENCY_MS = 10000;
+}
 
 var CHANGING_COLOR = false;
 var DEFAULT_H_RANGE = 0.30;
@@ -659,6 +672,8 @@ class Grid
         console.log("Undoing phase done");
         this.undoingPhaseComplete = true;
         this.undoCompletionTimestamp = Date.now();
+        if (NUM_FULL_DRAWINGS_TO_SAVE > 0)
+          NUM_FULL_DRAWINGS_TO_SAVE--;
       }
 
       // Wait LATENCY_AFTER_UNDONE_MS
@@ -769,27 +784,39 @@ class Canvas
     console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
   }
 
+  saveFrame()
+  {
+    var filename = "lines-" + str(frameId).padStart(5, "0");
+    saveCanvas(p5jsCanvas, filename, "jpg");
+  }
+  
   updateAndDrawCanvas()
   {
     // Frame per second limiting
     var now = Date.now();
     if (now - this.lastUpdateTimestamp < this.framePeriodMs)
     {
-      return;
+      // Pass
     }
     else
     {
+      if (SAVE_FRAMES && NUM_FULL_DRAWINGS_TO_SAVE > 0)
+      {
+        this.saveFrame();
+      }
+
       this.lastUpdateTimestamp = now;
-    }
+      for (var i = 0; i < NUM_UPDATES_PER_FRAME; i++)
+      {
+        this.grid.updateGrid();
+      }
 
-    for (var i = 0; i < NUM_UPDATES_PER_FRAME; i++)
-    {
-      this.grid.updateGrid();
-    }
+      if (!this.grid.undoingPhase)
+      {
+        this.grid.drawLines();
+      }
 
-    if (!this.grid.undoingPhase)
-    {
-      this.grid.drawLines();
+      frameId++;
     }
   }
 
@@ -829,9 +856,11 @@ function keyPressed()
 }
 
 myCanvas = new Canvas();
+var p5jsCanvas = undefined;
+var frameId = 0;
 function setup()
 {
-  createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+  p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
   colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
   textSize(12);

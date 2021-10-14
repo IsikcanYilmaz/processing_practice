@@ -27,6 +27,15 @@ var SMALLEST_ELLIPSE_WIDTH = 1;
 
 ////////////////////////
 
+var SAVE_FRAMES = false;
+
+var FRAME_LIMITING = true;
+var FRAME_PER_SECOND = 100;
+var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
+
+var DEBUG_LINES = true;
+var DEBUG_FPS = true;
+
 var BLACKOUTS_ENABLED = true;
 
 ////////////////////////
@@ -196,6 +205,14 @@ class Canvas
       this.numHalfPeriods = 0;
     }
   }
+
+  drawDebugPanel()
+  {
+    if (DEBUG_FPS)
+    {
+      console.log(fps);
+    }
+  }
 }
 
 ////////////////////////
@@ -220,9 +237,24 @@ function setup()
   smooth(8);
 }
 
+var lastFrameTs = 0;
+var fps = 0;
+var timeSinceLastFrameMsMs = 0;
 function draw()
 {
-  //background(DEFAULT_BACKGROUND);
+  var frameTs = Date.now();
+  if (lastFrameTs != 0)
+  {
+    timeSinceLastFrameMsMs = frameTs - lastFrameTs;
+    fps = int(1000 / timeSinceLastFrameMsMs);
+
+    if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
+    {
+      return;
+    }
+  }
+  lastFrameTs = frameTs;
   myCanvas.updateCanvas();
   myCanvas.drawCanvas();
+  myCanvas.drawDebugPanel();
 }
