@@ -218,13 +218,33 @@ class Canvas
 
     if (DEBUG_LINES)
     {
+      background(0, 0, 0);
       stroke(0, 0, 100);
+      strokeWeight(1);
       line(this.x + this.xoffset, 0, this.x + this.xoffset, WINDOW_HEIGHT);
       //line(0, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
       fill(0, 0, 100);
       rect(0, WINDOW_HEIGHT - 40, 50, 20);
       fill(0, 0, 0);
       text(str(this.x+this.xoffset) + " " + str(this.y+this.yoffset), 0, WINDOW_HEIGHT - 30);
+
+      strokeWeight(10);
+      point(this.x+this.xoffset, this.y+this.yoffset); // center point
+
+      strokeWeight(1);
+      line(this.x + this.xoffset - 30, this.y + this.yoffset, this.x + this.xoffset - 30, 0);
+      line(this.x + this.xoffset - 30, this.y + this.yoffset, this.x + this.xoffset - 30, WINDOW_HEIGHT);
+
+      fill(0, 0, 100);
+      textSize(20);
+      text(str(int(this.y + this.yoffset)), this.x + this.xoffset - 100, (this.y + this.yoffset)/2);
+      text(str(int(WINDOW_HEIGHT - this.y + this.yoffset)), this.x + this.xoffset - 100, (this.y + this.yoffset));
+
+      strokeWeight(10);
+      point(this.x+this.xoffset, this.y+this.yoffset+this.bubbleWidth/2); 
+
+      strokeWeight(10);
+      point(this.x+this.xoffset, this.y+this.yoffset-this.bubbleWidth/2);
     }
   }
 }
