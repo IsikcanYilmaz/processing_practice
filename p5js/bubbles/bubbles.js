@@ -35,6 +35,7 @@ var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var DEBUG_LINES = true;
 var DEBUG_FPS = true;
+var DEBUG_PAUSING = true;
 
 var BLACKOUTS_ENABLED = true;
 
@@ -103,10 +104,20 @@ class Canvas
 
     this.xoffset = Math.abs((WINDOW_WIDTH / 2) - 500);
     this.yoffset = Math.abs((WINDOW_HEIGHT / 2) - 520);
+
+    this.maxTopDistance = 0;
+    this.maxBotDistance = 0;
+
+    this.paused = true;
   }
 
   updateCanvas()
   {
+    if (DEBUG_PAUSING && this.paused)
+    {
+      return;
+    }
+
     this.oscW.update();
     this.oscH.update();
     this.oscS.update();
@@ -218,6 +229,12 @@ class Canvas
 
     if (DEBUG_LINES)
     {
+      var topDist = int(this.y + this.yoffset);
+      this.maxTopDistance = (topDist > this.maxTopDistance ? topDist : this.maxTopDistance);
+
+      var botDist = int(WINDOW_HEIGHT - (this.y + this.yoffset));
+      this.maxBotDistance = (botDist > this.maxBotDistance ? botDist : this.maxBotDistance);
+
       background(0, 0, 0);
       stroke(0, 0, 100);
       strokeWeight(1);
@@ -237,8 +254,8 @@ class Canvas
 
       fill(0, 0, 100);
       textSize(20);
-      text(str(int(this.y + this.yoffset)), this.x + this.xoffset - 100, (this.y + this.yoffset)/2);
-      text(str(int(WINDOW_HEIGHT - this.y + this.yoffset)), this.x + this.xoffset - 100, (this.y + this.yoffset));
+      text(str(int(this.y + this.yoffset)) + "," + str(this.maxTopDistance), this.x + this.xoffset - 100, (this.y + this.yoffset)/2);
+      text(str(int(WINDOW_HEIGHT - this.y + this.yoffset)) + "," + str(this.maxBotDistance), this.x + this.xoffset - 100, (this.y + this.yoffset));
 
       strokeWeight(10);
       point(this.x+this.xoffset, this.y+this.yoffset+this.bubbleWidth/2); 
@@ -258,6 +275,25 @@ function mouseMoved()
 function mouseWheel()
 {
 }
+
+function keyPressed()
+{
+  console.log("KEY PRESSED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = false;
+  }
+}
+
+function keyReleased()
+{
+  console.log("KEY RELEASED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = true;
+  }
+}
+
 
 ////////////////////////
 
