@@ -25,17 +25,21 @@ var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
 
 var SMALLEST_ELLIPSE_WIDTH = 1;
 
+var X_CLOSENESS_MODIFIER = 5;
+var Y_CLOSENESS_MODIFIER = 20;
+
 ////////////////////////
 
 var SAVE_FRAMES = false;
 
-var FRAME_LIMITING = true;
+var FRAME_LIMITING = false;
 var FRAME_PER_SECOND = 30;
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
-var DEBUG_LINES = true;
-var DEBUG_FPS = true;
-var DEBUG_PAUSING = true;
+var DEBUG_ALLOWED = true;
+var DEBUG_LINES = false;
+var DEBUG_FPS = false;
+var DEBUG_PAUSING = false;
 
 var BLACKOUTS_ENABLED = true;
 
@@ -102,8 +106,8 @@ class Canvas
 
     this.bubbleHDifference = 0;
 
-    this.xoffset = Math.abs((WINDOW_WIDTH / 2) - 500);
-    this.yoffset = Math.abs((WINDOW_HEIGHT / 2) - 520);
+    this.xoffset = Math.abs((WINDOW_WIDTH / 2) - (500 - X_CLOSENESS_MODIFIER));
+    this.yoffset = Math.abs((WINDOW_HEIGHT / 2) - (520 + Y_CLOSENESS_MODIFIER));
 
     this.maxTopDistance = 0;
     this.maxBotDistance = 0;
@@ -147,8 +151,8 @@ class Canvas
     this.y = (WINDOW_HEIGHT / 2) + (this.oscY.getVal() * 300);
     if (this.oscY.getVal() > 0)
     {
-      this.x -= 200;
-      this.y -= 300;
+      this.x = this.x - (200 - 2*X_CLOSENESS_MODIFIER);
+      this.y = this.y - (240 + 2*Y_CLOSENESS_MODIFIER);
     }
     
     if (this.blackingOut)
@@ -215,6 +219,16 @@ class Canvas
       this.blackingOut = false;
       this.numHalfPeriods = 0;
     }
+
+    // INFO WE USE FOR DEBUGGING
+    if (DEBUG_ALLOWED)
+    {
+      var topDist = int(this.y + this.yoffset);
+      this.maxTopDistance = (topDist > this.maxTopDistance ? topDist : this.maxTopDistance);
+
+      var botDist = int(WINDOW_HEIGHT - (this.y + this.yoffset));
+      this.maxBotDistance = (botDist > this.maxBotDistance ? botDist : this.maxBotDistance);
+    }
   }
 
   drawDebugPanel()
@@ -229,39 +243,69 @@ class Canvas
 
     if (DEBUG_LINES)
     {
-      var topDist = int(this.y + this.yoffset);
-      this.maxTopDistance = (topDist > this.maxTopDistance ? topDist : this.maxTopDistance);
-
-      var botDist = int(WINDOW_HEIGHT - (this.y + this.yoffset));
-      this.maxBotDistance = (botDist > this.maxBotDistance ? botDist : this.maxBotDistance);
-
       background(0, 0, 0);
       stroke(0, 0, 100);
       strokeWeight(1);
       line(this.x + this.xoffset, 0, this.x + this.xoffset, WINDOW_HEIGHT);
       //line(0, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
       fill(0, 0, 100);
-      rect(0, WINDOW_HEIGHT - 40, 50, 20);
+      rect(0, WINDOW_HEIGHT - 40, 120, 20);
       fill(0, 0, 0);
-      text(str(this.x+this.xoffset) + " " + str(this.y+this.yoffset), 0, WINDOW_HEIGHT - 30);
+      text("x:" + str(this.x + this.xoffset) + " y:" + str(int(this.y+this.yoffset)), 0, WINDOW_HEIGHT - 25);
 
+      // CENTER POINT
       strokeWeight(10);
-      point(this.x+this.xoffset, this.y+this.yoffset); // center point
+      point(this.x + this.xoffset, this.y+this.yoffset); // center point
 
+      // TOP LINE
       strokeWeight(1);
-      line(this.x + this.xoffset - 30, this.y + this.yoffset, this.x + this.xoffset - 30, 0);
-      line(this.x + this.xoffset - 30, this.y + this.yoffset, this.x + this.xoffset - 30, WINDOW_HEIGHT);
+      line(this.x + this.xoffset - 30, this.y + this.yoffset - 5, this.x + this.xoffset - 30, 0);
 
+      // BOTTOM LINE
+      strokeWeight(1);
+      line(this.x + this.xoffset - 30, this.y + this.yoffset + 5, this.x + this.xoffset - 30, WINDOW_HEIGHT);
+
+      // TOP LINE INFO TEXT
       fill(0, 0, 100);
       textSize(20);
-      text(str(int(this.y + this.yoffset)) + "," + str(this.maxTopDistance), this.x + this.xoffset - 100, (this.y + this.yoffset)/2);
-      text(str(int(WINDOW_HEIGHT - this.y + this.yoffset)) + "," + str(this.maxBotDistance), this.x + this.xoffset - 100, (this.y + this.yoffset));
+      text("len:" + str(int(this.y + this.yoffset)) + "\nmax:" + str(this.maxTopDistance), this.x + this.xoffset - 130, (this.y + this.yoffset)/2);
 
+      // BOTTOM LINE INFO TEXT
+      fill(0, 0, 100);
+      textSize(20);
+      text("len:" + str(int(WINDOW_HEIGHT - this.y - this.yoffset)) + "\nmax:" + str(this.maxBotDistance), this.x + this.xoffset - 130, (this.y + this.yoffset) + ((this.y + this.yoffset)/2));
+
+      // ELLIPSE TOP POINT
+      strokeWeight(10);
+      point(this.x+this.xoffset, this.y+this.yoffset-this.bubbleWidth/2);
+
+      // ELLIPSE BOTTOM POINT
       strokeWeight(10);
       point(this.x+this.xoffset, this.y+this.yoffset+this.bubbleWidth/2); 
 
-      strokeWeight(10);
-      point(this.x+this.xoffset, this.y+this.yoffset-this.bubbleWidth/2);
+      // LEFT LINE
+      strokeWeight(1);
+      line(0, this.y + this.yoffset, this.x + this.xoffset, this.y + this.yoffset);
+
+      // RIGHT LINE
+      strokeWeight(1);
+      line(this.x + this.xoffset, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
+
+      // LEFT LINE INFO TEXT
+      fill(0, 0, 100);
+      textSize(20);
+      text(str("len:" + str(this.x + this.xoffset)), (this.x + this.xoffset) / 2, this.y + this.yoffset);
+
+      // RIGHT LINE INFO TEXT
+      fill(0, 0, 100);
+      textSize(20);
+      text(str("len:" + str(WINDOW_WIDTH - this.x - this.xoffset)), this.x + this.xoffset + ((WINDOW_WIDTH - this.x - this.xoffset) / 2) , this.y + this.yoffset);
+
+      // X Y OFFSET TEXTS
+      fill(0, 0, 100);
+      rect(0, WINDOW_HEIGHT - 100, 80, 50);
+      fill(0, 0, 0);
+      text("xoff:" + str(this.xoffset) + "\nyoff:" + str(this.yoffset), 0, WINDOW_HEIGHT - 85);
     }
   }
 }
@@ -291,6 +335,12 @@ function keyReleased()
   if (key == ' ')
   {
     myCanvas.paused = true;
+  }
+  if (key == 'd' && DEBUG_ALLOWED)
+  {
+    background(0, 0, 0);
+    DEBUG_LINES = !DEBUG_LINES;
+    DEBUG_FPS = !DEBUG_FPS;
   }
 }
 
