@@ -30,7 +30,7 @@ var Y_CLOSENESS_MODIFIER = 20;
 
 ////////////////////////
 
-var SAVE_FRAMES = true;
+var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 3;
 
 var FRAME_LIMITING = false;
