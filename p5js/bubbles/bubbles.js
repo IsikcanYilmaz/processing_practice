@@ -30,13 +30,19 @@ var Y_CLOSENESS_MODIFIER = 20;
 
 ////////////////////////
 
-var SAVE_FRAMES = false;
+var SAVE_FRAMES = true;
+var SAVE_FRAMES_BLACKOUT_THRESHOLD = 3;
 
 var FRAME_LIMITING = false;
-var FRAME_PER_SECOND = 30;
+var FRAME_PER_SECOND = 60;
+if (SAVE_FRAMES)
+{
+  FRAME_LIMITING = true;
+  FRAME_PER_SECOND = 8;
+}
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
-var DEBUG_ALLOWED = true;
+var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_LINES = false;
 var DEBUG_FPS = false;
 var DEBUG_PAUSING = false;
@@ -113,6 +119,10 @@ class Canvas
     this.maxBotDistance = 0;
 
     this.paused = true;
+
+    this.frameId = 0;
+
+    this.numBlackouts = 0;
   }
 
   updateCanvas()
@@ -196,6 +206,7 @@ class Canvas
           this.oscW.phase = 0;
           this.oscY.phase = 0;
           this.numHalfPeriods = 0;
+          this.numBlackouts++;
         }
       }
       this.lastTimestamp = thisTimestamp;
@@ -221,14 +232,18 @@ class Canvas
     }
 
     // INFO WE USE FOR DEBUGGING
-    if (DEBUG_ALLOWED)
-    {
-      var topDist = int(this.y + this.yoffset);
-      this.maxTopDistance = (topDist > this.maxTopDistance ? topDist : this.maxTopDistance);
+    var topDist = int(this.y + this.yoffset);
+    this.maxTopDistance = (topDist > this.maxTopDistance ? topDist : this.maxTopDistance);
 
-      var botDist = int(WINDOW_HEIGHT - (this.y + this.yoffset));
-      this.maxBotDistance = (botDist > this.maxBotDistance ? botDist : this.maxBotDistance);
+    var botDist = int(WINDOW_HEIGHT - (this.y + this.yoffset));
+    this.maxBotDistance = (botDist > this.maxBotDistance ? botDist : this.maxBotDistance);
+
+    if (SAVE_FRAMES && this.numBlackouts < SAVE_FRAMES_BLACKOUT_THRESHOLD)
+    {
+      this.saveFrame();
     }
+    
+    this.frameId++;
   }
 
   drawDebugPanel()
@@ -308,6 +323,12 @@ class Canvas
       text("xoff:" + str(this.xoffset) + "\nyoff:" + str(this.yoffset), 0, WINDOW_HEIGHT - 85);
     }
   }
+
+  saveFrame()
+  {
+    var filename = "bubbles-" + str(this.frameId).padStart(5, "0");
+    saveCanvas(p5jsCanvas, filename, "jpg");
+  }
 }
 
 ////////////////////////
@@ -336,7 +357,7 @@ function keyReleased()
   {
     myCanvas.paused = true;
   }
-  if (key == 'd' && DEBUG_ALLOWED)
+  if (key == 'd' && TOGGLE_DEBUG_ALLOWED)
   {
     background(0, 0, 0);
     DEBUG_LINES = !DEBUG_LINES;
@@ -348,9 +369,10 @@ function keyReleased()
 ////////////////////////
 
 myCanvas = new Canvas();
+p5jsCanvas = undefined;
 function setup()
 {
-  createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+  p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
   colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
   textSize(12);
