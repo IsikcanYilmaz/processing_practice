@@ -38,42 +38,12 @@ var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
 ////////////////////////
 
-class Oscillator 
-{
-  constructor(increment, phase=0)
-  {
-    this.increment = increment;
-    this.phase = phase;
-    this.val = Math.sin(this.phase * PI);
-  }
-
-  update()
-  {
-    this.phase += this.increment;
-    this.val = Math.sin(this.phase * PI);
-  }
-
-  setIncrement(increment)
-  {
-    this.increment = increment;
-  }
-
-  getPhase()
-  {
-    return this.phase;
-  }
-
-  getVal()
-  {
-    return this.val;
-  }
-}
-
 class Grid
 {
   constructor()
   {
-    this.grid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.current = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.prev = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
   }
 
   getCellVal(x, y)
@@ -85,11 +55,54 @@ class Grid
   {
     var currVal = this.getCellVal(x, y);
     var nextVal = currVal;
+    var flow = 0;
+    var numNeighbors = 0;
+    if (x + 1 < GRID_WIDTH - 1)
+    {
+      flow += this.getCellVal(x + 1, y);
+      numNeighbors++;
+    }
+    if (x - 1 >= 0)
+    {
+      flow += this.getCellVal(x - 1, y);
+      numNeighbors++;
+    }
+    if (y + 1 < GRID_HEIGHT - 1)
+    {
+      flow += this.getCellVal(x, y + 1);
+      numNeighbors++;
+    }
+    if (y - 1 >= 0)
+    {
+      flow += this.getCellVal(x, y - 1);
+      numNeighbors++;
+    }
+    flow = flow / numNeighbors;
     return nextVal;
   }
 
   updateGrid()
   {
+    /*
+     *
+     *
+      /for each element/pixel
+        flow = (current(x+1,y) + 
+                current(x-1,y) + 
+                current(x,y+1) + 
+                current(x,y-1)) / 4        # Gets average of surrounding pixels
+
+        curr = current(x,y)
+        prev = previous(x,y)
+
+        next[x,y] = (2 * (flow*flowFactor + curr) / (flowFactor + 1) - prev) * dampening
+
+    # Swap buffers
+    previous = current
+    current = next
+
+     */
+
     newIterGrid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     for (var y = 0; y < GRID_HEIGHT; y++)
     {
