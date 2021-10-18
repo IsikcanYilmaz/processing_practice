@@ -31,7 +31,7 @@ var Y_CLOSENESS_MODIFIER = 20;
 ////////////////////////
 
 var SAVE_FRAMES = false;
-var SAVE_FRAMES_BLACKOUT_THRESHOLD = 3;
+var SAVE_FRAMES_BLACKOUT_THRESHOLD = 2;
 
 var FRAME_LIMITING = false;
 var FRAME_PER_SECOND = 60;
@@ -48,6 +48,7 @@ var DEBUG_FPS = false;
 var DEBUG_PAUSING = false;
 
 var BLACKOUTS_ENABLED = true;
+var DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT = 12;
 
 ////////////////////////
 
@@ -58,12 +59,18 @@ class Oscillator
     this.increment = increment;
     this.phase = phase;
     this.val = Math.sin(this.phase * PI);
+    this.prevVal = this.val;
+    this.goingUp = true;
+    this.prevGoingUp = this.goingUp;
   }
 
   update()
   {
+    this.prevVal = this.val;
+    this.prevGoingUp = this.goingUp;
     this.phase += this.increment;
     this.val = Math.sin(this.phase * PI);
+    this.goingUp = (this.val > this.prevVal);
   }
 
   setIncrement(increment)
@@ -98,7 +105,7 @@ class Canvas
     this.sizeChangeRate = 0.0025;
 
     this.oscW = new Oscillator(this.sizeChangeRate);
-    this.oscH = new Oscillator(0.00015, 0.27);
+    this.oscH = new Oscillator(0.00015, 0.1);
     this.oscS = new Oscillator(0.0005);
     this.oscX = new Oscillator(0);
     this.oscY = new Oscillator(this.sizeChangeRate);
@@ -106,7 +113,7 @@ class Canvas
     this.lastTimestamp = 0;
 
     this.blackingOut = false;
-    this.halfPeriodsTilBlackingOut = 12;
+    this.halfPeriodsTilBlackingOut = DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT;
     this.numHalfPeriods = 0;
     this.numBlackoutBeats = 0;
 
@@ -184,14 +191,14 @@ class Canvas
     fill(this.h, this.s, this.v);
     ellipse(this.x + this.xoffset, this.y + this.yoffset, this.bubbleWidth, this.bubbleWidth);
   
-    var beat = Math.abs(this.oscW.getVal());
-    if (beat == 1)
+    var beat = (this.oscW.goingUp != this.oscW.prevGoingUp);
+    if (beat)
     {
+      console.log("BEAT 1.");
       var d = new Date();
       var thisTimestamp = d.getTime();
       if (this.lastTimestamp != 0)
       {
-        console.log("BEAT 1", beat);
         if (this.blackingOut)
         {
           this.oscW.phase = 1;
@@ -212,10 +219,10 @@ class Canvas
       this.lastTimestamp = thisTimestamp;
     }
 
-    if (beat < 0.001)
+    if (Math.abs(this.oscW.getVal()) < 0.0001)
     {
       this.numHalfPeriods++;
-      console.log("BEAT 0", beat, "NUM HALF PERIODS", this.numHalfPeriods);
+      console.log("BEAT 0. NUM HALF PERIODS", this.numHalfPeriods);
     }
 
     if (this.numHalfPeriods > 0 && (this.numHalfPeriods % this.halfPeriodsTilBlackingOut) == 0 && !this.blackingOut && BLACKOUTS_ENABLED)
