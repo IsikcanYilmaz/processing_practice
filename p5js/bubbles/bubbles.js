@@ -31,7 +31,7 @@ var Y_CLOSENESS_MODIFIER = 20;
 ////////////////////////
 
 var SAVE_FRAMES = false;
-var SAVE_FRAMES_BLACKOUT_THRESHOLD = 2;
+var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
 
 var FRAME_LIMITING = false;
 var FRAME_PER_SECOND = 60;
@@ -102,10 +102,10 @@ class Canvas
     this.sUpperLimit = 80;
     this.sVariable = this.sUpperLimit - this.sLowerLimit;
 
-    this.sizeChangeRate = 0.0025;
+    this.sizeChangeRate = 0.0028;
 
     this.oscW = new Oscillator(this.sizeChangeRate);
-    this.oscH = new Oscillator(0.00015, 0.1);
+    this.oscH = new Oscillator(0.00015, 0.15);
     this.oscS = new Oscillator(0.0005);
     this.oscX = new Oscillator(0);
     this.oscY = new Oscillator(this.sizeChangeRate);
@@ -219,7 +219,7 @@ class Canvas
       this.lastTimestamp = thisTimestamp;
     }
 
-    if (Math.abs(this.oscW.getVal()) < 0.0001)
+    if (Math.abs(this.oscW.getVal()) < 0.005)
     {
       this.numHalfPeriods++;
       console.log("BEAT 0. NUM HALF PERIODS", this.numHalfPeriods);
