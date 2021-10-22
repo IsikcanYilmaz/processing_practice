@@ -1,9 +1,5 @@
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
-
-var H_MAX = 360;
-var S_MAX = 100;
-var V_MAX = 100;
+var WINDOW_HEIGHT = 1000;
+var WINDOW_WIDTH  = 1000;
 
 var DEFAULT_BACKGROUND = [0, 0, 0];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
@@ -19,7 +15,7 @@ var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 3;
 
 var FRAME_LIMITING = false;
-var FRAME_PER_SECOND = 20;
+var FRAME_PER_SECOND = 10;
 if (SAVE_FRAMES)
 {
   FRAME_LIMITING = true;
@@ -29,16 +25,37 @@ var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_STROKE = false;
+var DEBUG_VALS = false;
 
-var GRID_WIDTH = 100;
-var GRID_HEIGHT = 100;
+var GRID_DIMENSION = 50;
+var GRID_WIDTH = GRID_DIMENSION;
+var GRID_HEIGHT = GRID_DIMENSION;
+
+var HIDDEN_ROW = true;
+
+if (HIDDEN_ROW)
+{
+  GRID_DIMENSION++;
+}
 
 var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
-var DEFAULT_FLOW_FACTOR = 0.1;
-var DEFAULT_DAMPENING_FACTOR = 0.98;
+var DEFAULT_FLOW_FACTOR = 0.4;
+var DEFAULT_DAMPENING_FACTOR = 0.95;
 
+var H_MAX = 360;
+var S_MAX = 1000;
+var V_MAX = 100;
+
+var H_BASE = 200;
+var H_MULT = 0.3;
+
+var S_BASE = 800;
+var S_MULT = 20;
+
+var V_BASE = 30;
+var V_MULT = 5;
 
 ////////////////////////
 
@@ -48,6 +65,8 @@ class Grid
   {
     this.current = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.prev = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.dampeningFactor = DEFAULT_DAMPENING_FACTOR;
+    this.flowFactor = DEFAULT_FLOW_FACTOR;
   }
 
   getCellVal(x, y)
@@ -67,10 +86,10 @@ class Grid
 
   calculateNextCellVal(x, y)
   {
-    /* Algo straight up pulled from here: https://www.ixm-ibrahim.com/explanations/simulating-water-ripples
+    /* 
+     * Algo straight up pulled from here: https://www.ixm-ibrahim.com/explanations/simulating-water-ripples
      * who seems to have pulled from here: https://web.archive.org/web/20160116150939/http://freespace.virgin.net/hugo.elias/graphics/x_water.htm
      */
-
     var currVal = this.getCellVal(x, y);
     var nextVal = currVal;
     var prevVal = this.getPrevCellVal(x, y);
@@ -97,7 +116,7 @@ class Grid
       numNeighbors++;
     }
     flow = flow / numNeighbors;
-    nextVal = (2 * (flow * DEFAULT_FLOW_FACTOR + currVal) / (DEFAULT_FLOW_FACTOR + 1) - prevVal) * DEFAULT_DAMPENING_FACTOR;
+    nextVal = (2 * (flow * this.flowFactor + currVal) / (this.flowFactor + 1) - prevVal) * this.dampeningFactor;
     return nextVal;
   }
 
@@ -121,9 +140,22 @@ class Grid
     {
       for (var x = 0; x < GRID_WIDTH; x++)
       {
-        fill(200, this.current[y][x] * 10, 100);
+        if (HIDDEN_ROW)
+        {
+          if (x == GRID_WIDTH - 1 || y == GRID_HEIGHT - 1)
+          {
+            continue;
+          }
+        }
+        fill(H_BASE + (this.current[y][x] * H_MULT), S_BASE + this.current[y][x] * S_MULT, V_BASE + (this.current[y][x] * V_MULT));
         strokeWeight((DEBUG_STROKE ? 1 : 0));
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX);
+
+        if (DEBUG_VALS)
+        {
+          fill(0, 100, 0);
+          text(int(this.current[y][x] * 20 + 300), x * CELL_WIDTH_PX + CELL_WIDTH_PX/4, y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2, CELL_WIDTH_PX, CELL_HEIGHT_PX);
+        }
       }
     }
   }
@@ -134,7 +166,7 @@ class Canvas
 {
   constructor()
   {
-    this.grid = new Grid();
+    this.reset();
   }
 
   updateCanvas()
@@ -156,6 +188,11 @@ class Canvas
     var filename = "bubbles-" + str(this.frameId).padStart(5, "0");
     saveCanvas(p5jsCanvas, filename, "jpg");
   }
+
+  reset()
+  {
+    this.grid = new Grid();
+  }
 }
 
 ////////////////////////
@@ -175,6 +212,7 @@ function mouseDragged()
 {
   var cellX = int(mouseX / CELL_WIDTH_PX);
   var cellY = int(mouseY / CELL_HEIGHT_PX); 
+  //console.log("MOUSE DRAGGED", mouseX, mouseY, cellX, cellY);
   if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
   {
     myCanvas.grid.setCellVal(cellX, cellY, 100);
@@ -192,6 +230,10 @@ function mouseWheel()
 function keyPressed()
 {
   console.log("KEY PRESSED", key);
+  if (key == 'r')
+  {
+    myCanvas.reset();
+  }
 }
 
 function keyReleased()
