@@ -50,13 +50,15 @@ var S_MAX = 1000;
 var V_MAX = 100;
 
 var H_BASE = 180;
-var H_MULT = 0.1;
+var H_MULT = -0.5;
 
 var S_BASE = 800;
 var S_MULT = 20;
 
 var V_BASE = 30;
-var V_MULT = 10;
+var V_MULT = 1;
+
+var MIRROR_CLICKS = false;
 
 ////////////////////////
 
@@ -194,30 +196,34 @@ class Canvas
   {
     this.grid = new Grid();
   }
+
+  mouseInput(xPx, yPx)
+  {
+    var cellX = int(mouseX / CELL_WIDTH_PX);
+    var cellY = int(mouseY / CELL_HEIGHT_PX); 
+    if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
+    {
+      myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
+    }
+
+    if (MIRROR_CLICKS)
+    {
+      myCanvas.grid.setCellVal(GRID_WIDTH - cellX, GRID_HEIGHT - cellY, DEFAULT_CLICK_MAGNITUDE);
+    }
+  }
 }
 
 ////////////////////////
 
 function mouseClicked()
 {
-  var cellX = int(mouseX / CELL_WIDTH_PX);
-  var cellY = int(mouseY / CELL_HEIGHT_PX); 
   console.log("MOUSE CLICKED", mouseX, mouseY, cellX, cellY);
-  if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
-  {
-    myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
-  }
+  myCanvas.mouseInput(mouseX, mouseY);
 }
 
 function mouseDragged()
 {
-  var cellX = int(mouseX / CELL_WIDTH_PX);
-  var cellY = int(mouseY / CELL_HEIGHT_PX); 
-  //console.log("MOUSE DRAGGED", mouseX, mouseY, cellX, cellY);
-  if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
-  {
-    myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
-  }
+  myCanvas.mouseInput(mouseX, mouseY);
 }
 
 function mouseMoved()
@@ -238,6 +244,10 @@ function keyPressed()
   if (key == 's')
   {
     DEBUG_STROKE = !DEBUG_STROKE;
+  }
+  if (key == 'm')
+  {
+    MIRROR_CLICKS = !MIRROR_CLICKS;
   }
 }
 
