@@ -19,7 +19,7 @@ var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 3;
 
 var FRAME_LIMITING = false;
-var FRAME_PER_SECOND = 60;
+var FRAME_PER_SECOND = 20;
 if (SAVE_FRAMES)
 {
   FRAME_LIMITING = true;
@@ -28,12 +28,16 @@ if (SAVE_FRAMES)
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var TOGGLE_DEBUG_ALLOWED = false;
+var DEBUG_STROKE = false;
 
 var GRID_WIDTH = 100;
 var GRID_HEIGHT = 100;
 
 var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
+
+var DEFAULT_FLOW_FACTOR = 0.1;
+var DEFAULT_DAMPENING_FACTOR = 0.99;
 
 
 ////////////////////////
@@ -48,13 +52,28 @@ class Grid
 
   getCellVal(x, y)
   {
-    return this.grid[y][x];
+    return this.current[y][x];
+  }
+
+  getPrevCellVal(x, y)
+  {
+    return this.prev[y][x];
+  }
+
+  setCellVal(x, y, val)
+  {
+    this.current[y][x] = val;
   }
 
   calculateNextCellVal(x, y)
   {
+    /* Algo straight up pulled from here: https://www.ixm-ibrahim.com/explanations/simulating-water-ripples
+     * who seems to have pulled from here: https://web.archive.org/web/20160116150939/http://freespace.virgin.net/hugo.elias/graphics/x_water.htm
+     */
+
     var currVal = this.getCellVal(x, y);
     var nextVal = currVal;
+    var prevVal = this.getPrevCellVal(x, y);
     var flow = 0;
     var numNeighbors = 0;
     if (x + 1 < GRID_WIDTH - 1)
@@ -78,40 +97,22 @@ class Grid
       numNeighbors++;
     }
     flow = flow / numNeighbors;
+    nextVal = (2 * (flow * DEFAULT_FLOW_FACTOR + currVal) / (DEFAULT_FLOW_FACTOR + 1) - prevVal) * DEFAULT_DAMPENING_FACTOR;
     return nextVal;
   }
 
   updateGrid()
   {
-    /*
-     *
-     *
-      /for each element/pixel
-        flow = (current(x+1,y) + 
-                current(x-1,y) + 
-                current(x,y+1) + 
-                current(x,y-1)) / 4        # Gets average of surrounding pixels
-
-        curr = current(x,y)
-        prev = previous(x,y)
-
-        next[x,y] = (2 * (flow*flowFactor + curr) / (flowFactor + 1) - prev) * dampening
-
-    # Swap buffers
-    previous = current
-    current = next
-
-     */
-
-    newIterGrid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    var newIterGrid = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     for (var y = 0; y < GRID_HEIGHT; y++)
     {
       for (var x = 0; x < GRID_WIDTH; x++)
       {
-        newIter[y][x] = this.calculateNextCellVal(x, y);
+        newIterGrid[y][x] = this.calculateNextCellVal(x, y);
       }
     }
-    this.grid = newIterGrid;
+    this.prev = this.current;
+    this.current = newIterGrid;
   }
 
   drawGrid()
@@ -120,8 +121,8 @@ class Grid
     {
       for (var x = 0; x < GRID_WIDTH; x++)
       {
-        fill(160, 10, 100);
-        strokeWeight(1);
+        fill(200, this.current[y][x] * 10, 100);
+        strokeWeight((DEBUG_STROKE ? 1 : 0));
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX);
       }
     }
@@ -138,6 +139,7 @@ class Canvas
 
   updateCanvas()
   {
+    this.grid.updateGrid();
   }
 
   drawCanvas()
@@ -165,7 +167,17 @@ function mouseClicked()
   console.log("MOUSE CLICKED", mouseX, mouseY, cellX, cellY);
   if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
   {
-    // TODO
+    myCanvas.grid.setCellVal(cellX, cellY, 100);
+  }
+}
+
+function mouseDragged()
+{
+  var cellX = int(mouseX / CELL_WIDTH_PX);
+  var cellY = int(mouseY / CELL_HEIGHT_PX); 
+  if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
+  {
+    myCanvas.grid.setCellVal(cellX, cellY, 100);
   }
 }
 
