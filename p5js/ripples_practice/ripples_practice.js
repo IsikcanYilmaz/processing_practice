@@ -217,7 +217,7 @@ class Canvas
 
 function mouseClicked()
 {
-  console.log("MOUSE CLICKED", mouseX, mouseY, cellX, cellY);
+  console.log("MOUSE CLICKED", mouseX, mouseY);
   myCanvas.mouseInput(mouseX, mouseY);
 }
 
