@@ -199,8 +199,8 @@ class Canvas
 
   mouseInput(xPx, yPx)
   {
-    var cellX = int(mouseX / CELL_WIDTH_PX);
-    var cellY = int(mouseY / CELL_HEIGHT_PX); 
+    var cellX = int(xPx / CELL_WIDTH_PX);
+    var cellY = int(yPx / CELL_HEIGHT_PX); 
     if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
     {
       myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
