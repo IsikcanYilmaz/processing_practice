@@ -43,19 +43,20 @@ var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
 var DEFAULT_FLOW_FACTOR = 0.4;
 var DEFAULT_DAMPENING_FACTOR = 0.95;
+var DEFAULT_CLICK_MAGNITUDE = 100;
 
 var H_MAX = 360;
 var S_MAX = 1000;
 var V_MAX = 100;
 
-var H_BASE = 200;
-var H_MULT = 0.3;
+var H_BASE = 180;
+var H_MULT = 0.1;
 
 var S_BASE = 800;
 var S_MULT = 20;
 
 var V_BASE = 30;
-var V_MULT = 5;
+var V_MULT = 10;
 
 ////////////////////////
 
@@ -204,7 +205,7 @@ function mouseClicked()
   console.log("MOUSE CLICKED", mouseX, mouseY, cellX, cellY);
   if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
   {
-    myCanvas.grid.setCellVal(cellX, cellY, 100);
+    myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
   }
 }
 
@@ -215,7 +216,7 @@ function mouseDragged()
   //console.log("MOUSE DRAGGED", mouseX, mouseY, cellX, cellY);
   if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
   {
-    myCanvas.grid.setCellVal(cellX, cellY, 100);
+    myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
   }
 }
 
@@ -233,6 +234,10 @@ function keyPressed()
   if (key == 'r')
   {
     myCanvas.reset();
+  }
+  if (key == 's')
+  {
+    DEBUG_STROKE = !DEBUG_STROKE;
   }
 }
 
