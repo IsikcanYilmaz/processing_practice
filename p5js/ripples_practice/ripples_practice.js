@@ -56,7 +56,7 @@ var S_BASE = 800;
 var S_MULT = 20;
 
 var V_BASE = 0;
-var V_MULT = 5;
+var V_MULT = 20;
 
 var MIRROR_CLICKS = false;
 var RAIN = false;
@@ -254,19 +254,29 @@ class Canvas
       case BEHAVIOR_Y_SIN:
         {
           this.yOsc.update();
-          var oscLen = (WINDOW_HEIGHT/2) - 2*CELL_HEIGHT_PX;
+          this.heightOsc.update();
+          var newSpeed = 0.02 + (0.1 * (1 - Math.abs(this.heightOsc.getVal())));
+          //var mag = Math.abs(this.heightOsc.getVal()) * 200;
+          var mag = 50;
+          this.yOsc.setIncrement(newSpeed);
+          var oscLen = this.heightOsc.getVal() * ((WINDOW_HEIGHT/2) - 15*CELL_HEIGHT_PX);
           var x = WINDOW_WIDTH / 2;
           var y = (WINDOW_HEIGHT / 2) + (this.yOsc.getVal() * oscLen);
-          this.input(x, y);
+          this.input(x, y, mag);
           break;
         }
       case BEHAVIOR_X_SIN:
         {
           this.xOsc.update();
-          var oscLen = (WINDOW_WIDTH/2) - 2*CELL_WIDTH_PX;
+          this.heightOsc.update();
+          var newSpeed = 0.02 + (0.1 * (1 - Math.abs(this.heightOsc.getVal())));
+          //var mag = Math.abs(this.heightOsc.getVal()) * 200;
+          var mag = 50;
+          this.xOsc.setIncrement(newSpeed);
+          var oscLen = this.heightOsc.getVal() * ((WINDOW_WIDTH/2) - 15*CELL_HEIGHT_PX);
           var x = (WINDOW_WIDTH / 2) + (this.xOsc.getVal() * oscLen);
           var y = WINDOW_HEIGHT / 2;
-          this.input(x, y);
+          this.input(x, y, mag);
           break;
         }
       case BEHAVIOR_WHIRLY:
@@ -324,7 +334,7 @@ class Canvas
   {
     this.yOsc = new Oscillator(0.02, 0);
     this.xOsc = new Oscillator(0.02, 0);
-    this.heightOsc = new Oscillator(0.001, 0);
+    this.heightOsc = new Oscillator(0.0005, 0);
   }
 
   raindrop()
