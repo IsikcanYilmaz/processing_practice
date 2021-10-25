@@ -1,5 +1,5 @@
-var WINDOW_HEIGHT = 1000;
-var WINDOW_WIDTH  = 1000;
+var WINDOW_HEIGHT = 600;
+var WINDOW_WIDTH  = 600;
 
 var DEFAULT_BACKGROUND = [0, 0, 0];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
@@ -26,8 +26,9 @@ var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_STROKE = false;
 var DEBUG_VALS = false;
+var DEBUG_FPS = false;
 
-var GRID_DIMENSION = 60;
+var GRID_DIMENSION = 65;
 var GRID_WIDTH = GRID_DIMENSION;
 var GRID_HEIGHT = GRID_DIMENSION;
 
@@ -41,25 +42,25 @@ var CELL_WIDTH_PX = WINDOW_WIDTH / GRID_WIDTH;
 var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
 var DEFAULT_FLOW_FACTOR = 0.4;
-var DEFAULT_DAMPENING_FACTOR = 0.95;
+var DEFAULT_DAMPENING_FACTOR = 0.96;
 var DEFAULT_CLICK_MAGNITUDE = 120;
 
 var H_MAX = 360;
 var S_MAX = 1000;
 var V_MAX = 100;
 
-var H_BASE = 180;
-var H_MULT = -0.5;
+var H_BASE = 170;
+var H_MULT = 0.3;
 
 var S_BASE = 800;
 var S_MULT = 20;
 
 var V_BASE = 0;
-var V_MULT = 20;
+var V_MULT = 5;
 
 var MIRROR_CLICKS = false;
 var RAIN = false;
-var RAIN_CHANCE = 0.4;
+var RAIN_CHANCE = 0.05;
 
 ////////////////////////
 
@@ -100,13 +101,6 @@ class Oscillator
   }
 }
 
-// BEHAVIORS
-var BEHAVIOR_NONE = 0;
-var BEHAVIOR_Y_SIN = 1;
-var BEHAVIOR_X_SIN = 2;
-
-var DEFAULT_BEHAVIOR = BEHAVIOR_NONE; 
-
 class Grid
 {
   constructor()
@@ -115,7 +109,6 @@ class Grid
     this.prev = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.dampeningFactor = DEFAULT_DAMPENING_FACTOR;
     this.flowFactor = DEFAULT_FLOW_FACTOR;
-    this.behavior = DEFAULT_BEHAVIOR;
   }
 
   getCellVal(x, y)
@@ -211,11 +204,77 @@ class Grid
   }
 }
 
+// BEHAVIORS
+var BEHAVIOR_NONE = 0;
+var BEHAVIOR_Y_SIN = 1;
+var BEHAVIOR_X_SIN = 2;
+var BEHAVIOR_WHIRLY = 3;
+var BEHAVIOR_MAX = 4;
+
+var BEHAVIOR_DEFAULT = BEHAVIOR_NONE; 
+
 class Canvas 
 {
-  constructor()
+  constructor(beh=BEHAVIOR_DEFAULT)
   {
     this.reset();
+    this.behavior = beh;
+  }
+
+  behaviorSet(beh)
+  {
+    if (beh >= BEHAVIOR_MAX)
+    {
+      console.log("BAD BEH VALUE", beh);
+      return;
+    }
+    this.behavior = beh;
+    this.resetOscillators();
+    console.log("SET BEHAVIOR", beh);
+  }
+
+  behaviorGet()
+  {
+    return this.behavior;
+  }
+
+  behaviorSetNext()
+  {
+    this.behaviorSet((this.behaviorGet() + 1) % BEHAVIOR_MAX);
+  }
+  
+  behaviorFunction()
+  {
+    switch(this.behavior)
+    {
+      case BEHAVIOR_NONE:
+        {
+          break;
+        }
+      case BEHAVIOR_Y_SIN:
+        {
+          this.yOsc.update();
+          var oscLen = (WINDOW_HEIGHT/2) - 2*CELL_HEIGHT_PX;
+          var x = WINDOW_WIDTH / 2;
+          var y = (WINDOW_HEIGHT / 2) + (this.yOsc.getVal() * oscLen);
+          this.input(x, y);
+          break;
+        }
+      case BEHAVIOR_X_SIN:
+        {
+          this.xOsc.update();
+          var oscLen = (WINDOW_WIDTH/2) - 2*CELL_WIDTH_PX;
+          var x = (WINDOW_WIDTH / 2) + (this.xOsc.getVal() * oscLen);
+          var y = WINDOW_HEIGHT / 2;
+          this.input(x, y);
+          break;
+        }
+      case BEHAVIOR_WHIRLY:
+        {
+          break;
+        }
+      default:
+    }
   }
 
   updateCanvas()
@@ -228,15 +287,25 @@ class Canvas
         this.raindrop();
       }
     }
+    this.behaviorFunction();
   }
 
   drawCanvas()
   {
     this.grid.drawGrid();
+    this.drawDebugPanel();
   }
 
   drawDebugPanel()
   {
+    if (DEBUG_FPS)
+    {
+      fill(0, 0, 100);
+      rect(0, WINDOW_HEIGHT - 50, 50, 50);
+      fill(0, 100, 0);
+      textSize(30);
+      text(fps, 0, WINDOW_HEIGHT - 25);
+    }
   }
 
   saveFrame()
@@ -248,23 +317,28 @@ class Canvas
   reset()
   {
     this.grid = new Grid();
+    this.resetOscillators();
+  }
+
+  resetOscillators()
+  {
+    this.yOsc = new Oscillator(0.02, 0);
+    this.xOsc = new Oscillator(0.02, 0);
+    this.heightOsc = new Oscillator(0.001, 0);
   }
 
   raindrop()
   {
-    var cellX = int(Math.random() * GRID_WIDTH);
-    var cellY = int(Math.random() * GRID_HEIGHT);
-    var mag = int(Math.random () * 100);
-    myCanvas.grid.setCellVal(cellX, cellY, mag);
+    this.input(int(Math.random() * GRID_WIDTH), int(Math.random() * GRID_HEIGHT), mag);
   }
 
-  mouseInput(xPx, yPx)
+  input(xPx, yPx, mag=DEFAULT_CLICK_MAGNITUDE)
   {
     var cellX = int(xPx / CELL_WIDTH_PX);
     var cellY = int(yPx / CELL_HEIGHT_PX);
     if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
     {
-      myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
+      myCanvas.grid.setCellVal(cellX, cellY, mag);
     }
 
     if (MIRROR_CLICKS)
@@ -279,12 +353,12 @@ class Canvas
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
-  myCanvas.mouseInput(mouseX, mouseY);
+  myCanvas.input(mouseX, mouseY);
 }
 
 function mouseDragged()
 {
-  myCanvas.mouseInput(mouseX, mouseY);
+  myCanvas.input(mouseX, mouseY);
 }
 
 function mouseMoved()
@@ -310,9 +384,18 @@ function keyPressed()
   {
     MIRROR_CLICKS = !MIRROR_CLICKS;
   }
+  if (key == 'b')
+  {
+    myCanvas.behaviorSetNext();
+  }
   if (key == 'd')
   {
     //DEBUG_VALS = !DEBUG_VALS;
+  }
+  if (key == 'f')
+  {
+    DEBUG_FPS = !DEBUG_FPS;
+    background(0, 0, 0);
   }
 }
 
