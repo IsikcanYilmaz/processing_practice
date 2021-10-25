@@ -27,12 +27,11 @@ var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_STROKE = false;
 var DEBUG_VALS = false;
 
-var GRID_DIMENSION = 50;
+var GRID_DIMENSION = 60;
 var GRID_WIDTH = GRID_DIMENSION;
 var GRID_HEIGHT = GRID_DIMENSION;
 
 var HIDDEN_ROW = true;
-
 if (HIDDEN_ROW)
 {
   GRID_DIMENSION++;
@@ -43,7 +42,7 @@ var CELL_HEIGHT_PX = WINDOW_HEIGHT / GRID_HEIGHT;
 
 var DEFAULT_FLOW_FACTOR = 0.4;
 var DEFAULT_DAMPENING_FACTOR = 0.95;
-var DEFAULT_CLICK_MAGNITUDE = 100;
+var DEFAULT_CLICK_MAGNITUDE = 120;
 
 var H_MAX = 360;
 var S_MAX = 1000;
@@ -55,12 +54,58 @@ var H_MULT = -0.5;
 var S_BASE = 800;
 var S_MULT = 20;
 
-var V_BASE = 30;
-var V_MULT = 1;
+var V_BASE = 0;
+var V_MULT = 20;
 
 var MIRROR_CLICKS = false;
+var RAIN = false;
+var RAIN_CHANCE = 0.4;
 
 ////////////////////////
+
+class Oscillator 
+{
+  constructor(increment, phase=0)
+  {
+    this.increment = increment;
+    this.phase = phase;
+    this.val = Math.sin(this.phase * PI);
+    this.prevVal = this.val;
+    this.goingUp = true;
+    this.prevGoingUp = this.goingUp;
+  }
+
+  update()
+  {
+    this.prevVal = this.val;
+    this.prevGoingUp = this.goingUp;
+    this.phase += this.increment;
+    this.val = Math.sin(this.phase * PI);
+    this.goingUp = (this.val > this.prevVal);
+  }
+
+  setIncrement(increment)
+  {
+    this.increment = increment;
+  }
+
+  getPhase()
+  {
+    return this.phase;
+  }
+
+  getVal()
+  {
+    return this.val;
+  }
+}
+
+// BEHAVIORS
+var BEHAVIOR_NONE = 0;
+var BEHAVIOR_Y_SIN = 1;
+var BEHAVIOR_X_SIN = 2;
+
+var DEFAULT_BEHAVIOR = BEHAVIOR_NONE; 
 
 class Grid
 {
@@ -70,6 +115,7 @@ class Grid
     this.prev = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.dampeningFactor = DEFAULT_DAMPENING_FACTOR;
     this.flowFactor = DEFAULT_FLOW_FACTOR;
+    this.behavior = DEFAULT_BEHAVIOR;
   }
 
   getCellVal(x, y)
@@ -119,7 +165,7 @@ class Grid
       numNeighbors++;
     }
     flow = flow / numNeighbors;
-    nextVal = (2 * (flow * this.flowFactor + currVal) / (this.flowFactor + 1) - prevVal) * this.dampeningFactor;
+    nextVal = ((2 * (flow * this.flowFactor + currVal) / (this.flowFactor + 1) - prevVal) * this.dampeningFactor);
     return nextVal;
   }
 
@@ -145,7 +191,7 @@ class Grid
       {
         if (HIDDEN_ROW)
         {
-          if (x == GRID_WIDTH - 1 || y == GRID_HEIGHT - 1)
+          if (x == GRID_WIDTH - 1 || y == GRID_HEIGHT - 1 || x == 0 || y == 0)
           {
             continue;
           }
@@ -156,13 +202,13 @@ class Grid
 
         if (DEBUG_VALS)
         {
-          fill(0, 100, 0);
-          text(int(this.current[y][x] * 20 + 300), x * CELL_WIDTH_PX + CELL_WIDTH_PX/4, y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2, CELL_WIDTH_PX, CELL_HEIGHT_PX);
+          fill(0, 100, 100);
+          textSize(10);
+          text((this.current[y][x]), x * CELL_WIDTH_PX + CELL_WIDTH_PX/4, y * CELL_HEIGHT_PX + CELL_HEIGHT_PX/2, CELL_WIDTH_PX, CELL_HEIGHT_PX);
         }
       }
     }
   }
-
 }
 
 class Canvas 
@@ -175,6 +221,13 @@ class Canvas
   updateCanvas()
   {
     this.grid.updateGrid();
+    if (RAIN)
+    {
+      if (Math.random() < RAIN_CHANCE)
+      {
+        this.raindrop();
+      }
+    }
   }
 
   drawCanvas()
@@ -197,10 +250,18 @@ class Canvas
     this.grid = new Grid();
   }
 
+  raindrop()
+  {
+    var cellX = int(Math.random() * GRID_WIDTH);
+    var cellY = int(Math.random() * GRID_HEIGHT);
+    var mag = int(Math.random () * 100);
+    myCanvas.grid.setCellVal(cellX, cellY, mag);
+  }
+
   mouseInput(xPx, yPx)
   {
     var cellX = int(xPx / CELL_WIDTH_PX);
-    var cellY = int(yPx / CELL_HEIGHT_PX); 
+    var cellY = int(yPx / CELL_HEIGHT_PX);
     if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
     {
       myCanvas.grid.setCellVal(cellX, cellY, DEFAULT_CLICK_MAGNITUDE);
@@ -248,6 +309,10 @@ function keyPressed()
   if (key == 'm')
   {
     MIRROR_CLICKS = !MIRROR_CLICKS;
+  }
+  if (key == 'd')
+  {
+    //DEBUG_VALS = !DEBUG_VALS;
   }
 }
 
