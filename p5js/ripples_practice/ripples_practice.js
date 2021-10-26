@@ -12,7 +12,7 @@ var TAU = Math.PI * 2;
 ////////////////////////
 
 var SAVE_FRAMES = false;
-var SAVE_FRAMES_BLACKOUT_THRESHOLD = 3;
+var SAVE_NUM_FRAMES = 30 * 20;
 
 var FRAME_LIMITING = false;
 var FRAME_PER_SECOND = 10;
@@ -28,7 +28,7 @@ var DEBUG_STROKE = false;
 var DEBUG_VALS = false;
 var DEBUG_FPS = false;
 
-var GRID_DIMENSION = 65;
+var GRID_DIMENSION = 100;
 var GRID_WIDTH = GRID_DIMENSION;
 var GRID_HEIGHT = GRID_DIMENSION;
 
@@ -60,8 +60,14 @@ var V_MULT = 20;
 
 var MIRROR_CLICKS = false;
 var RAIN = false;
-var RAIN_CHANCE = 0.05;
+var LONG_INPUT = false;
 
+var RAIN_CHANCE = 0.05;
+var LONG_INPUT_LENGTH_CELLS = 20;
+var LONG_INPUT_CLICKABLE_AREA = Math.floor((GRID_WIDTH - LONG_INPUT_LENGTH_CELLS) * CELL_WIDTH_PX);
+var LONG_INPUT_CLICKABLE_UL = (GRID_WIDTH * CELL_WIDTH_PX / 2) + (LONG_INPUT_CLICKABLE_AREA / 2);
+var LONG_INPUT_CLICKABLE_LL = (GRID_WIDTH * CELL_WIDTH_PX / 2) - (LONG_INPUT_CLICKABLE_AREA / 2);
+var LONG_INPUT_MAGNITUDE = DEFAULT_CLICK_MAGNITUDE / 8;
 ////////////////////////
 
 class Oscillator 
@@ -211,7 +217,7 @@ var BEHAVIOR_X_SIN = 2;
 var BEHAVIOR_WHIRLY = 3;
 var BEHAVIOR_MAX = 4;
 
-var BEHAVIOR_DEFAULT = BEHAVIOR_NONE; 
+var BEHAVIOR_DEFAULT = BEHAVIOR_Y_SIN; 
 
 class Canvas 
 {
@@ -304,6 +310,11 @@ class Canvas
   {
     this.grid.drawGrid();
     this.drawDebugPanel();
+    if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
+    {
+      this.saveFrame();
+    }
+    this.frameId++;
   }
 
   drawDebugPanel()
@@ -320,7 +331,7 @@ class Canvas
 
   saveFrame()
   {
-    var filename = "bubbles-" + str(this.frameId).padStart(5, "0");
+    var filename = "ripples-" + str(this.frameId).padStart(5, "0");
     saveCanvas(p5jsCanvas, filename, "jpg");
   }
 
@@ -328,6 +339,7 @@ class Canvas
   {
     this.grid = new Grid();
     this.resetOscillators();
+    this.frameId = 0;
   }
 
   resetOscillators()
@@ -356,6 +368,28 @@ class Canvas
       myCanvas.grid.setCellVal(GRID_WIDTH - cellX, GRID_HEIGHT - cellY, DEFAULT_CLICK_MAGNITUDE);
     }
   }
+
+  longInput(xPx, yPx, mag=DEFAULT_CLICK_MAGNITUDE)
+  {
+    if (xPx < LONG_INPUT_CLICKABLE_LL)
+    {
+      xPx = LONG_INPUT_CLICKABLE_LL;
+    }
+    if (xPx > LONG_INPUT_CLICKABLE_UL)
+    {
+      xPx = LONG_INPUT_CLICKABLE_UL;
+    }
+    var cellX = int(xPx / CELL_WIDTH_PX);
+    var cellY = int(yPx / CELL_HEIGHT_PX);
+
+    if (cellX < GRID_WIDTH && cellX >= 0 && cellY < GRID_HEIGHT && cellY >= 0)
+    {
+      for (var i = cellX + (LONG_INPUT_LENGTH_CELLS/2); i > cellX - (LONG_INPUT_LENGTH_CELLS/2); i--)
+      {
+        myCanvas.grid.setCellVal(i, cellY, mag);
+      }
+    }
+  }
 }
 
 ////////////////////////
@@ -363,12 +397,26 @@ class Canvas
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
-  myCanvas.input(mouseX, mouseY);
+  if (LONG_INPUT)
+  {
+    myCanvas.longInput(mouseX, mouseY);
+  }
+  else
+  {
+    myCanvas.input(mouseX, mouseY);
+  }
 }
 
 function mouseDragged()
 {
-  myCanvas.input(mouseX, mouseY);
+  if (LONG_INPUT)
+  {
+    myCanvas.longInput(mouseX, mouseY, LONG_INPUT_MAGNITUDE);
+  }
+  else
+  {
+    myCanvas.input(mouseX, mouseY);
+  }
 }
 
 function mouseMoved()
@@ -406,6 +454,11 @@ function keyPressed()
   {
     DEBUG_FPS = !DEBUG_FPS;
     background(0, 0, 0);
+  }
+  if (key == 'l')
+  {
+    LONG_INPUT = !LONG_INPUT;
+    console.log("LONG INPUT ", LONG_INPUT);
   }
 }
 
