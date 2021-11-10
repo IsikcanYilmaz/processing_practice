@@ -29,7 +29,7 @@ function preload(){
 
 function setup()
 {
-  createCanvas(width, height, WEBGL);
+  createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT, WEBGL);
   noStroke()
 }
 
@@ -38,17 +38,17 @@ function draw()
   // shader() sets the active shader with our shader
   shader(theShader);
 
-  theShader.setUniform('resolution', [width, height]);
+  theShader.setUniform('resolution', [WINDOW_WIDTH, WINDOW_HEIGHT]);
   //theShader.setUniform('mouse', map(mouseX, 0, width, 0, 7)); // map processing function. remaps number from one range to another. map(value, start1, stop1, start2, stop2)
-  var x = (30 * mouseX / width);
-  var y = (30 * mouseY / height);
+  var x = (30 * mouseX / WINDOW_WIDTH);
+  var y = (30 * mouseY / WINDOW_HEIGHT);
   theShader.setUniform('mouseX', x);
   theShader.setUniform('mouseY', y);
   console.log(x, y);
   theShader.setUniform('time', frameCount * 0.01);
 
   // rect gives us some geometry on the screen
-  rect(0,0,width,height);
+  rect(0,0,WINDOW_WIDTH,WINDOW_HEIGHT);
   
   // print out the framerate
   //  print(frameRate());

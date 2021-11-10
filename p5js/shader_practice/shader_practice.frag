@@ -46,7 +46,7 @@ vec4 poly(float x, float y, float size, float sides, float rotation, vec3 col){
 
 void main() {
 
-  vec2 center = resolution * 0.5; // draw the shape at the center of the screen
+  vec2 center = resolution ; // draw the shape at the center of the screen
   float size = resolution.y * 0.5; // make the shape a quarter of the screen height
   float sides = mod(floor(mouseY), 30.0) + 3.0; // slowly increase the sides, when it reaches 10 sides, go back down to 3
   //float sides = 6.0;
