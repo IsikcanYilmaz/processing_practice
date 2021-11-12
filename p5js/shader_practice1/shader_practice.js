@@ -44,7 +44,6 @@ function draw()
   var y = (30 * mouseY / WINDOW_HEIGHT);
   theShader.setUniform('mouseX', x);
   theShader.setUniform('mouseY', y);
-  console.log(x, y);
   theShader.setUniform('time', frameCount * 0.01);
 
   // rect gives us some geometry on the screen
