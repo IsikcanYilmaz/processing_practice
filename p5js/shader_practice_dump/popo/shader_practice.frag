@@ -20,15 +20,12 @@ void main()
 {
   vec2 st = gl_FragCoord.xy / resolution;
   vec2 mo = mouse / resolution;
-
-  vec2 cellSizeNorm = cellSize / resolution;
- 
-  vec2 myCell = floor(st / cellSizeNorm);
-  vec2 myCellNorm = myCell / gridSize;
-
+  
   float x = st.x;
   float y = st.y;
 
-  //gl_FragColor = vec4(st.x * mo.x, 0.0, st.y * mo.y, 1);
-  gl_FragColor = vec4(myCellNorm.x, myCellNorm.y, 0, 1);
+  gl_FragColor = vec4(st.x * mo.x, 0.0, st.y * mo.y, 1);
+
+
+
 }
