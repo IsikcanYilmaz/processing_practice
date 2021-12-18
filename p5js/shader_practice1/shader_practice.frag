@@ -10,6 +10,7 @@ uniform float time;
 uniform vec2 mouse;
 uniform vec2 gridSize;
 uniform vec2 cellSize;
+uniform sampler2D grid;
 
 // this is a function that turns an rgb value that goes from 0 - 255 into 0.0 - 1.0
 vec3 rgb(float r, float g, float b){
@@ -29,6 +30,9 @@ void main()
   float x = st.x;
   float y = st.y;
 
+  //float myVal = grid[(gridSize.y * myCell.y) + myCell.x];
+  //float myValNorm = myVal / 10.0;
+
   //gl_FragColor = vec4(st.x * mo.x, 0.0, st.y * mo.y, 1);
-  gl_FragColor = vec4(myCellNorm.x, myCellNorm.y, 0, 1);
+  gl_FragColor = vec4(myCellNorm.x, 0, 0, 1);
 }
