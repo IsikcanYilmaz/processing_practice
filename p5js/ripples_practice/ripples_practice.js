@@ -28,7 +28,7 @@ var DEBUG_STROKE = false;
 var DEBUG_VALS = false;
 var DEBUG_FPS = false;
 
-var GRID_DIMENSION = 100;
+var GRID_DIMENSION = 60;
 var GRID_WIDTH = GRID_DIMENSION;
 var GRID_HEIGHT = GRID_DIMENSION;
 
@@ -180,9 +180,13 @@ class Grid
       {
         newIterGrid[y][x] = this.calculateNextCellVal(x, y);
 
-        if (IMAGE_DRAW_METHOD)
+        if (IMAGE_DRAW_METHOD && x < GRID_WIDTH - 1 && x > 0 && y < GRID_HEIGHT - 1 && y > 0)
         {
-          this.currentImg.set(x, y, (newIterGrid[y][x] > 0 ? 100 : 0));
+          var h = H_BASE + (this.current[y][x] * H_MULT);
+          var s = S_BASE + (this.current[y][x] * S_MULT);
+          var v = V_BASE + (this.current[y][x] * V_MULT);
+          var c = color(h, s, v);
+          this.currentImg.set(x, y, c);
         }
       }
     }
@@ -192,8 +196,7 @@ class Grid
 
   drawGridImageMethod()
   {
-    //this.currentImg.resize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    image(this.currentImg, 0, 0);
+    image(this.currentImg, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     this.currentImg.updatePixels();
   }
 
@@ -333,19 +336,20 @@ class Canvas
 
   drawCanvas()
   {
-    //this.grid.drawGrid();
-    this.grid.drawGridImageMethod();
-    //this.drawDebugPanel();
+    if (IMAGE_DRAW_METHOD)
+    {
+      this.grid.drawGridImageMethod();
+    }
+    else
+    {
+      this.grid.drawGrid();
+    }
+    this.drawDebugPanel();
     if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
     {
       this.saveFrame();
     }
     this.frameId++;
-  }
-
-  drawCanvasImage()
-  {
-    
   }
 
   drawDebugPanel()
@@ -490,6 +494,11 @@ function keyPressed()
   {
     LONG_INPUT = !LONG_INPUT;
     console.log("LONG INPUT ", LONG_INPUT);
+  }
+  if (key == 'i')
+  {
+    IMAGE_DRAW_METHOD = !IMAGE_DRAW_METHOD;
+    console.log("DRAW METHOD FLIPPED");
   }
 }
 
