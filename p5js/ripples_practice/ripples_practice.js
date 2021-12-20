@@ -192,6 +192,7 @@ class Grid
 
   drawGridImageMethod()
   {
+    //this.currentImg.resize(WINDOW_WIDTH, WINDOW_HEIGHT);
     image(this.currentImg, 0, 0);
     this.currentImg.updatePixels();
   }
