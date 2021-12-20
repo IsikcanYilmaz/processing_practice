@@ -68,6 +68,8 @@ var LONG_INPUT_CLICKABLE_AREA = Math.floor((GRID_WIDTH - LONG_INPUT_LENGTH_CELLS
 var LONG_INPUT_CLICKABLE_UL = (GRID_WIDTH * CELL_WIDTH_PX / 2) + (LONG_INPUT_CLICKABLE_AREA / 2);
 var LONG_INPUT_CLICKABLE_LL = (GRID_WIDTH * CELL_WIDTH_PX / 2) - (LONG_INPUT_CLICKABLE_AREA / 2);
 var LONG_INPUT_MAGNITUDE = DEFAULT_CLICK_MAGNITUDE / 8;
+
+var IMAGE_DRAW_METHOD = true;
 ////////////////////////
 
 class Oscillator 
@@ -115,6 +117,7 @@ class Grid
     this.prev = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.dampeningFactor = DEFAULT_DAMPENING_FACTOR;
     this.flowFactor = DEFAULT_FLOW_FACTOR;
+    this.currentImg = createImage(GRID_WIDTH, GRID_HEIGHT);
   }
 
   getCellVal(x, y)
@@ -176,10 +179,21 @@ class Grid
       for (var x = 0; x < GRID_WIDTH; x++)
       {
         newIterGrid[y][x] = this.calculateNextCellVal(x, y);
+
+        if (IMAGE_DRAW_METHOD)
+        {
+          this.currentImg.set(x, y, (newIterGrid[y][x] > 0 ? 100 : 0));
+        }
       }
     }
     this.prev = this.current;
     this.current = newIterGrid;
+  }
+
+  drawGridImageMethod()
+  {
+    image(this.currentImg, 0, 0);
+    this.currentImg.updatePixels();
   }
 
   drawGrid()
@@ -207,6 +221,16 @@ class Grid
         }
       }
     }
+  }
+
+  getCurrent()
+  {
+    return this.current;
+  }
+
+  get1DCurrent()
+  {
+    return [].concat(...this.current);
   }
 }
 
@@ -308,13 +332,19 @@ class Canvas
 
   drawCanvas()
   {
-    this.grid.drawGrid();
-    this.drawDebugPanel();
+    //this.grid.drawGrid();
+    this.grid.drawGridImageMethod();
+    //this.drawDebugPanel();
     if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
     {
       this.saveFrame();
     }
     this.frameId++;
+  }
+
+  drawCanvasImage()
+  {
+    
   }
 
   drawDebugPanel()
@@ -470,7 +500,7 @@ function keyReleased()
 
 ////////////////////////
 
-myCanvas = new Canvas();
+myCanvas = undefined; 
 p5jsCanvas = undefined;
 function setup()
 {
@@ -479,6 +509,7 @@ function setup()
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
+  myCanvas = new Canvas();
 }
 
 var lastFrameTs = 0;
