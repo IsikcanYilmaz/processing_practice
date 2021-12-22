@@ -27,6 +27,13 @@ var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_FPS = false;
+var DEBUG_LINES = true;
+
+var TARGET_ELLIPSE_SIZE = 13;
+var TARGET_ELLIPSE_COLOR = [0, 0, 100];
+
+var BALL_ELLIPSE_SIZE = 10;
+var BALL_ELLIPSE_COLOR = [10, 100, 100];
 
 ////////////////////////
 
@@ -67,12 +74,87 @@ class Oscillator
   }
 }
 
+var SIMPLE_MOVEMENT_FACTOR = 0.01;
+
 class MovingBall
 {
   constructor()
   {
     this.x = WINDOW_WIDTH/2;
     this.y = WINDOW_HEIGHT/2;
+    this.targetx = this.x;
+    this.targety = this.y;
+    this.dx = 0;
+    this.dy = 0;
+  }
+
+  movementCalculateVector()
+  {
+    this.movementSimpleFollow();
+  }
+
+  movementSimpleFollow()
+  {
+    var xdiff = this.x - this.targetx;
+    var ydiff = this.y - this.targety;
+    this.dy = 0;
+    this.dx = 0;
+    if (xdiff > 0)
+    {
+      this.dx -= Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    else if (xdiff < 0)
+    {
+      this.dx += Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    else
+    {
+      //
+    }
+
+    if (ydiff > 0)
+    {
+      this.dy -= Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    else if (ydiff < 0)
+    {
+      this.dy += Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    else
+    {
+      //
+    }
+
+    this.x += this.dx;
+    this.y += this.dy;
+
+  }
+
+  move()
+  {
+    this.x += this.dx;
+    this.y += this.dy;
+  }
+
+  drawBall()
+  {
+    fill(BALL_ELLIPSE_COLOR);
+    ellipse(this.x, this.y, BALL_ELLIPSE_SIZE, BALL_ELLIPSE_SIZE);
+  }
+
+  drawDebug()
+  {
+    if (DEBUG_LINES)
+    {
+      stroke(TARGET_ELLIPSE_COLOR);
+      line(this.x, this.y, this.x + this.dx * 20, this.y + this.dy * 20);
+    }
+  }
+
+  setTarget(x, y)
+  {
+    this.targetx = x;
+    this.targety = y;
   }
 }
 
@@ -80,14 +162,24 @@ class Canvas
 {
   constructor()
   {
+    this.targetx = WINDOW_WIDTH/2;
+    this.targety = WINDOW_HEIGHT/2;
+    this.ball = new MovingBall(this.targetx, this.targety);
   }
 
   updateCanvas()
   {
+    this.ball.movementCalculateVector();
+    this.ball.move();
   }
 
   drawCanvas()
   {
+    background(DEFAULT_BACKGROUND);
+    fill(TARGET_ELLIPSE_COLOR);
+    ellipse(this.targetx, this.targety, TARGET_ELLIPSE_SIZE, TARGET_ELLIPSE_SIZE);
+    this.ball.drawBall();
+    this.ball.drawDebug();
   }
 
   drawDebugPanel()
@@ -99,6 +191,13 @@ class Canvas
       fill(0, 0, 0);
       text(str(fps), 0, WINDOW_HEIGHT - 5);
     }
+  }
+
+  setTarget(x, y)
+  {
+    this.targetx = x;
+    this.targety = y;
+    this.ball.setTarget(x, y);
   }
 }
 
@@ -115,11 +214,13 @@ function mouseWheel()
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
+  myCanvas.setTarget(mouseX, mouseY);
 }
 
 function mouseDragged()
 {
   console.log("MOUSE DRAGGED", mouseX, mouseY);
+  myCanvas.setTarget(mouseX, mouseY);
 }
 
 
