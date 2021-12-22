@@ -86,11 +86,13 @@ class MovingBall
     this.targety = this.y;
     this.dx = 0;
     this.dy = 0;
+    this.ddx = 0;
+    this.ddy = 0;
   }
 
   movementCalculateVector()
   {
-    this.movementSimpleFollow();
+    this.movementDrifting();
   }
 
   movementSimpleFollow()
@@ -107,11 +109,6 @@ class MovingBall
     {
       this.dx += Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
     }
-    else
-    {
-      //
-    }
-
     if (ydiff > 0)
     {
       this.dy -= Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
@@ -120,14 +117,34 @@ class MovingBall
     {
       this.dy += Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
     }
-    else
-    {
-      //
-    }
-
     this.x += this.dx;
     this.y += this.dy;
+  }
 
+  movementDrifting()
+  {
+    var xdiff = this.x - this.targetx;
+    var ydiff = this.y - this.targety;
+    this.dy = 0;
+    this.dx = 0;
+    if (xdiff > 0)
+    {
+      this.dx -= Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    else if (xdiff < 0)
+    {
+      this.dx += Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    if (ydiff > 0)
+    {
+      this.dy -= Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    else if (ydiff < 0)
+    {
+      this.dy += Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
+    }
+    this.x += this.dx;
+    this.y += this.dy;
   }
 
   move()
@@ -146,8 +163,10 @@ class MovingBall
   {
     if (DEBUG_LINES)
     {
-      stroke(TARGET_ELLIPSE_COLOR);
+      stroke(0, 0, 100);
       line(this.x, this.y, this.x + this.dx * 20, this.y + this.dy * 20);
+      stroke(40, 0, 100);
+      line(this.x, this.y, this.x + this.ddx * 20, this.y + this.ddy * 20);
     }
   }
 
