@@ -28,7 +28,7 @@ var DEBUG_STROKE = false;
 var DEBUG_VALS = false;
 var DEBUG_FPS = false;
 
-var GRID_DIMENSION = 60;
+var GRID_DIMENSION = 120;
 var GRID_WIDTH = GRID_DIMENSION;
 var GRID_HEIGHT = GRID_DIMENSION;
 
@@ -71,6 +71,15 @@ var LONG_INPUT_MAGNITUDE = DEFAULT_CLICK_MAGNITUDE / 8;
 
 var IMAGE_DRAW_METHOD = true;
 ////////////////////////
+
+function timeIt(fn, str)
+{
+  var start = new Date().getTime();
+  fn();
+  var end = new Date().getTime();
+  console.log(str, end - start);
+  return end - start;
+}
 
 class Oscillator 
 {
@@ -481,6 +490,10 @@ function keyPressed()
   {
     myCanvas.behaviorSetNext();
   }
+  if (key == 'B')
+  {
+    myCanvas.behavior = BEHAVIOR_NONE;
+  }
   if (key == 'd')
   {
     //DEBUG_VALS = !DEBUG_VALS;
@@ -518,7 +531,7 @@ function setup()
   colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
   textSize(12);
-  smooth(8);
+  smooth(0);
   myCanvas = new Canvas();
 }
 
