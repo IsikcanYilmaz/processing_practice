@@ -75,6 +75,7 @@ class Oscillator
 }
 
 var SIMPLE_MOVEMENT_FACTOR = 0.01;
+//var ACCEL_FACTOR = 
 
 class MovingBall
 {
@@ -86,13 +87,15 @@ class MovingBall
     this.targety = this.y;
     this.dx = 0;
     this.dy = 0;
-    this.ddx = 0;
-    this.ddy = 0;
+    this.accelx = 0;
+    this.accely = 0;
+    this.location = p5.Vector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+    this.accel = p5.Vector(0, 0);
   }
 
   movementCalculateVector()
   {
-    this.movementDrifting();
+    this.movementAccel();
   }
 
   movementSimpleFollow()
@@ -121,30 +124,9 @@ class MovingBall
     this.y += this.dy;
   }
 
-  movementDrifting()
+  movementAccel()
   {
-    var xdiff = this.x - this.targetx;
-    var ydiff = this.y - this.targety;
-    this.dy = 0;
-    this.dx = 0;
-    if (xdiff > 0)
-    {
-      this.dx -= Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    else if (xdiff < 0)
-    {
-      this.dx += Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    if (ydiff > 0)
-    {
-      this.dy -= Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    else if (ydiff < 0)
-    {
-      this.dy += Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    this.x += this.dx;
-    this.y += this.dy;
+    
   }
 
   move()
