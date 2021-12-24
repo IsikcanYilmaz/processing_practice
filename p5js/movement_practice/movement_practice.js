@@ -74,88 +74,66 @@ class Oscillator
   }
 }
 
-var SIMPLE_MOVEMENT_FACTOR = 0.01;
-//var ACCEL_FACTOR = 
+var SIMPLE_MOVEMENT_FACTOR = 0.1;
+var MAX_SPEED = 5;
 
 class MovingBall
 {
   constructor()
   {
-    this.x = WINDOW_WIDTH/2;
-    this.y = WINDOW_HEIGHT/2;
-    this.targetx = this.x;
-    this.targety = this.y;
-    this.dx = 0;
-    this.dy = 0;
-    this.accelx = 0;
-    this.accely = 0;
-    this.location = p5.Vector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
-    this.accel = p5.Vector(0, 0);
+    this.location = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+    this.velocity = createVector(0, 0);
+    this.accel = createVector(0, 0);
+    this.target = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
   }
 
-  movementCalculateVector()
+  movementCalculateLocation()
   {
-    this.movementAccel();
+    this.movementSimpleFollow();
   }
 
   movementSimpleFollow()
   {
-    var xdiff = this.x - this.targetx;
-    var ydiff = this.y - this.targety;
-    this.dy = 0;
-    this.dx = 0;
-    if (xdiff > 0)
-    {
-      this.dx -= Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    else if (xdiff < 0)
-    {
-      this.dx += Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    if (ydiff > 0)
-    {
-      this.dy -= Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    else if (ydiff < 0)
-    {
-      this.dy += Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR);
-    }
-    this.x += this.dx;
-    this.y += this.dy;
+    var xdiff = this.location.x - this.target.x;
+    var ydiff = this.location.y - this.target.y;
+    this.velocity.x = 0;
+    this.velocity.y = 0;
+    this.velocity.x += (xdiff > 0 ? -1 * Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR) : Math.abs(xdiff * SIMPLE_MOVEMENT_FACTOR));
+    this.velocity.y += (ydiff > 0 ? -1 * Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR) : Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR));
   }
 
   movementAccel()
   {
+    var xdiff = this.location.x - this.target.x;
+    var ydiff = this.location.y - this.target.y;
+    
     
   }
 
   move()
   {
-    this.x += this.dx;
-    this.y += this.dy;
+    this.location.add(this.velocity);
   }
 
   drawBall()
   {
     fill(BALL_ELLIPSE_COLOR);
-    ellipse(this.x, this.y, BALL_ELLIPSE_SIZE, BALL_ELLIPSE_SIZE);
+    ellipse(this.location.x, this.location.y, BALL_ELLIPSE_SIZE, BALL_ELLIPSE_SIZE);
   }
 
   drawDebug()
   {
     if (DEBUG_LINES)
     {
-      stroke(0, 0, 100);
-      line(this.x, this.y, this.x + this.dx * 20, this.y + this.dy * 20);
-      stroke(40, 0, 100);
-      line(this.x, this.y, this.x + this.ddx * 20, this.y + this.ddy * 20);
+      stroke(TARGET_ELLIPSE_COLOR);
+      line(this.location.x, this.location.y, this.location.x + this.velocity.x * 5, this.location.y + this.velocity.y * 5);
     }
   }
 
   setTarget(x, y)
   {
-    this.targetx = x;
-    this.targety = y;
+    this.target.x = x;
+    this.target.y = y;
   }
 }
 
@@ -163,14 +141,13 @@ class Canvas
 {
   constructor()
   {
-    this.targetx = WINDOW_WIDTH/2;
-    this.targety = WINDOW_HEIGHT/2;
-    this.ball = new MovingBall(this.targetx, this.targety);
+    this.target = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+    this.ball = new MovingBall(this.target.x, this.target.y);
   }
 
   updateCanvas()
   {
-    this.ball.movementCalculateVector();
+    this.ball.movementCalculateLocation();
     this.ball.move();
   }
 
@@ -178,7 +155,7 @@ class Canvas
   {
     background(DEFAULT_BACKGROUND);
     fill(TARGET_ELLIPSE_COLOR);
-    ellipse(this.targetx, this.targety, TARGET_ELLIPSE_SIZE, TARGET_ELLIPSE_SIZE);
+    ellipse(this.target.x, this.target.y, TARGET_ELLIPSE_SIZE, TARGET_ELLIPSE_SIZE);
     this.ball.drawBall();
     this.ball.drawDebug();
   }
@@ -196,8 +173,8 @@ class Canvas
 
   setTarget(x, y)
   {
-    this.targetx = x;
-    this.targety = y;
+    this.target.x = x;
+    this.target.y = y;
     this.ball.setTarget(x, y);
   }
 }
@@ -251,7 +228,7 @@ function keyReleased()
 
 ////////////////////////
 
-myCanvas = new Canvas();
+myCanvas = undefined;
 p5jsCanvas = undefined;
 function setup()
 {
@@ -260,6 +237,7 @@ function setup()
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
+  myCanvas = new Canvas();
 }
 
 var lastFrameTs = 0;
