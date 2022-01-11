@@ -17,7 +17,7 @@ var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
 
 var FRAME_LIMITING = false;
-var FRAME_PER_SECOND = 60;
+var FRAME_PER_SECOND = 10;
 if (SAVE_FRAMES)
 {
   FRAME_LIMITING = true;
@@ -31,6 +31,7 @@ var DEBUG_LINES = true;
 
 var TARGET_ELLIPSE_SIZE = 13;
 var TARGET_ELLIPSE_COLOR = [0, 0, 100];
+var ACCEL_DEBUG_LINE_COLOR = [10, 100, 100];
 
 var BALL_ELLIPSE_SIZE = 10;
 var BALL_ELLIPSE_COLOR = [10, 100, 100];
@@ -75,21 +76,26 @@ class Oscillator
 }
 
 var SIMPLE_MOVEMENT_FACTOR = 0.1;
-var MAX_SPEED = 5;
+var DECEL_THRESHOLD = 10;
+var ACCEL_FACTOR = 0.005;
+var DECEL_FACTOR = 0.01;
+var MAX_ACCEL = 0.05;
 
 class MovingBall
 {
-  constructor()
+  constructor(initx, inity)
   {
-    this.location = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+    this.location = createVector(initx, inity);
     this.velocity = createVector(0, 0);
     this.accel = createVector(0, 0);
-    this.target = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+    this.target = createVector(initx, inity);
+    this.halfway = createVector(initx, inity);
   }
 
   movementCalculateLocation()
   {
-    this.movementSimpleFollow();
+    //this.movementSmartAccel();
+    this.movementSimpleAccel();
   }
 
   movementSimpleFollow()
@@ -102,12 +108,25 @@ class MovingBall
     this.velocity.y += (ydiff > 0 ? -1 * Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR) : Math.abs(ydiff * SIMPLE_MOVEMENT_FACTOR));
   }
 
-  movementAccel()
+  movementSimpleAccel()
   {
-    var xdiff = this.location.x - this.target.x;
-    var ydiff = this.location.y - this.target.y;
-    
-    
+    var diff = p5.Vector.sub(this.target, this.location);
+    var newAccel = p5.Vector.add(this.accel, p5.Vector.mult(diff, ACCEL_FACTOR));
+    newAccel.limit(MAX_ACCEL);
+
+    this.accel = newAccel;
+    this.velocity.add(this.accel);
+    this.velocity.limit(diff.mag()/20);
+  }
+
+  movementSmartAccel()
+  {
+    var diff = p5.Vector.sub(this.target, this.location);
+    var newAccel = p5.Vector.add(this.accel, p5.Vector.mult(diff, ACCEL_FACTOR));
+    newAccel.limit(MAX_ACCEL);
+
+    this.accel = newAccel;
+    this.velocity.add(this.accel);
   }
 
   move()
@@ -127,6 +146,10 @@ class MovingBall
     {
       stroke(TARGET_ELLIPSE_COLOR);
       line(this.location.x, this.location.y, this.location.x + this.velocity.x * 5, this.location.y + this.velocity.y * 5);
+      stroke(ACCEL_DEBUG_LINE_COLOR);
+      line(this.location.x, this.location.y, this.location.x + this.accel.x * 200, this.location.y + this.accel.y * 200);
+      line(this.location.x, this.location.y, this.halfway.x, this.halfway.y);
+      line(0,0, this.halfway.x, this.halfway.y);
     }
   }
 
@@ -134,6 +157,7 @@ class MovingBall
   {
     this.target.x = x;
     this.target.y = y;
+    this.halfway = this.target;
   }
 }
 
@@ -141,8 +165,7 @@ class Canvas
 {
   constructor()
   {
-    this.target = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
-    this.ball = new MovingBall(this.target.x, this.target.y);
+    this.reset();
   }
 
   updateCanvas()
@@ -155,6 +178,7 @@ class Canvas
   {
     background(DEFAULT_BACKGROUND);
     fill(TARGET_ELLIPSE_COLOR);
+    stroke(TARGET_ELLIPSE_COLOR);
     ellipse(this.target.x, this.target.y, TARGET_ELLIPSE_SIZE, TARGET_ELLIPSE_SIZE);
     this.ball.drawBall();
     this.ball.drawDebug();
@@ -177,6 +201,12 @@ class Canvas
     this.target.y = y;
     this.ball.setTarget(x, y);
   }
+
+  reset()
+  {
+    this.target = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+    this.ball = new MovingBall(this.target.x, this.target.y);
+  }
 }
 
 ////////////////////////
@@ -197,7 +227,7 @@ function mouseClicked()
 
 function mouseDragged()
 {
-  console.log("MOUSE DRAGGED", mouseX, mouseY);
+  //console.log("MOUSE DRAGGED", mouseX, mouseY);
   myCanvas.setTarget(mouseX, mouseY);
 }
 
@@ -222,6 +252,14 @@ function keyReleased()
   {
     background(0, 0, 0);
     DEBUG_FPS = !DEBUG_FPS;
+  }
+  if (key == 'l')
+  {
+    FRAME_LIMITING != FRAME_LIMITING;
+  }
+  if (key == 'r')
+  {
+    myCanvas.reset();
   }
 }
 

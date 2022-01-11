@@ -1,27 +1,5 @@
-//var WINDOW_HEIGHT = 600
-//var WINDOW_WIDTH  = 600
-
-//var H_MAX = 360
-//var S_MAX = 100
-//var V_MAX = 100
-
-//var ORIGINAL_GRID_SIZE_X = 16;
-//var ORIGINAL_GRID_SIZE_Y = 16;
-
-//var GRID_SIZE_X = 64;
-//var GRID_SIZE_Y = 64;
-
-//var CELL_SIZE_X = (WINDOW_WIDTH / GRID_SIZE_X); 
-//var CELL_SIZE_Y = (WINDOW_HEIGHT / GRID_SIZE_Y); 
-
-//var cellSizeNorm = CELL_SIZE_X / WINDOW_WIDTH;
-
-////////////////////////
-// RIPPLES STUFF
-//
-
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 6 * 120;
+var WINDOW_WIDTH  = 6 * 120;
 
 var DEFAULT_BACKGROUND = [0, 0, 0];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
@@ -50,15 +28,9 @@ var DEBUG_STROKE = false;
 var DEBUG_VALS = false;
 var DEBUG_FPS = false;
 
-var GRID_DIMENSION = 128;
+var GRID_DIMENSION = 120;
 var GRID_WIDTH = GRID_DIMENSION;
 var GRID_HEIGHT = GRID_DIMENSION;
-
-var GRID_SIZE_X = GRID_WIDTH;
-var GRID_SIZE_Y = GRID_HEIGHT;
-
-var CELL_SIZE_X = (WINDOW_WIDTH / GRID_SIZE_X); 
-var CELL_SIZE_Y = (WINDOW_HEIGHT / GRID_SIZE_Y);
 
 var HIDDEN_ROW = true;
 if (HIDDEN_ROW)
@@ -77,14 +49,16 @@ var H_MAX = 360;
 var S_MAX = 1000;
 var V_MAX = 100;
 
-var H_BASE = 170;
-var H_MULT = 0.3;
+var H_BASE = 320;
+var H_MULT = 4;
+var H_MAG_THRESH = 2;
+var H_ALTERNATE_BASE = H_BASE;//200;
 
 var S_BASE = 800;
 var S_MULT = 20;
 
 var V_BASE = 0;
-var V_MULT = 20;
+var V_MULT = 80;//20;
 
 var MIRROR_CLICKS = false;
 var RAIN = false;
@@ -97,8 +71,25 @@ var LONG_INPUT_CLICKABLE_UL = (GRID_WIDTH * CELL_WIDTH_PX / 2) + (LONG_INPUT_CLI
 var LONG_INPUT_CLICKABLE_LL = (GRID_WIDTH * CELL_WIDTH_PX / 2) - (LONG_INPUT_CLICKABLE_AREA / 2);
 var LONG_INPUT_MAGNITUDE = DEFAULT_CLICK_MAGNITUDE / 8;
 
-var USE_CUSTOM_SHADER = true;
+var IMAGE_DRAW_METHOD = true;
+
+var MOVEMENT_METHOD_MOVER = 0;
+var MOVEMENT_METHOD_MOUSE = 1;
+var CURRENT_MOVEMENT_METHOD = MOVEMENT_METHOD_MOVER;
+
+var NUM_MOVERS = 4;
+var ACTIVE_MOVER = 0;
+
 ////////////////////////
+
+function timeIt(fn, str)
+{
+  var start = new Date().getTime();
+  fn();
+  var end = new Date().getTime();
+  console.log(str, end - start);
+  return end - start;
+}
 
 class Oscillator 
 {
@@ -145,6 +136,7 @@ class Grid
     this.prev = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
     this.dampeningFactor = DEFAULT_DAMPENING_FACTOR;
     this.flowFactor = DEFAULT_FLOW_FACTOR;
+    this.currentImg = createImage(GRID_WIDTH, GRID_HEIGHT);
   }
 
   getCellVal(x, y)
@@ -206,10 +198,25 @@ class Grid
       for (var x = 0; x < GRID_WIDTH; x++)
       {
         newIterGrid[y][x] = this.calculateNextCellVal(x, y);
+
+        if (IMAGE_DRAW_METHOD && x < GRID_WIDTH - 1 && x > 0 && y < GRID_HEIGHT - 1 && y > 0)
+        {
+          var h = ((Math.abs(this.current[y][x]) > H_MAG_THRESH) ? H_BASE : H_ALTERNATE_BASE)+ (this.current[y][x] * H_MULT);
+          var s = S_BASE + (this.current[y][x] * S_MULT);
+          var v = V_BASE + (this.current[y][x] * V_MULT);
+          var c = color(h, s, v);
+          this.currentImg.set(x, y, c);
+        }
       }
     }
     this.prev = this.current;
     this.current = newIterGrid;
+  }
+
+  drawGridImageMethod()
+  {
+    image(this.currentImg, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    this.currentImg.updatePixels();
   }
 
   drawGrid()
@@ -225,7 +232,11 @@ class Grid
             continue;
           }
         }
-        fill(H_BASE + (this.current[y][x] * H_MULT), S_BASE + this.current[y][x] * S_MULT, V_BASE + (this.current[y][x] * V_MULT));
+        var h = ((Math.abs(this.current[y][x]) > H_MAG_THRESH) ? H_BASE : H_ALTERNATE_BASE)+ (this.current[y][x] * H_MULT);
+        var s = S_BASE + (this.current[y][x] * S_MULT);
+        var v = V_BASE + (this.current[y][x] * V_MULT);
+        var c = color(h, s, v);
+        fill(c);
         strokeWeight((DEBUG_STROKE ? 1 : 0));
         rect(x * CELL_WIDTH_PX, y * CELL_HEIGHT_PX, CELL_WIDTH_PX, CELL_HEIGHT_PX);
 
@@ -335,6 +346,7 @@ class Canvas
 
   updateCanvas()
   {
+    this.updateMovers();
     this.grid.updateGrid();
     if (RAIN)
     {
@@ -348,7 +360,14 @@ class Canvas
 
   drawCanvas()
   {
-    this.grid.drawGrid();
+    if (IMAGE_DRAW_METHOD)
+    {
+      this.grid.drawGridImageMethod();
+    }
+    else
+    {
+      this.grid.drawGrid();
+    }
     this.drawDebugPanel();
     if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
     {
@@ -380,6 +399,44 @@ class Canvas
     this.grid = new Grid();
     this.resetOscillators();
     this.frameId = 0;
+    this.activeMover = ACTIVE_MOVER;
+    this.resetMovers();
+  }
+
+  setActiveMover(num)
+  {
+    if (num < NUM_MOVERS)
+    {
+      console.log("ACTIVE MOVER", num);
+      this.activeMover = num;
+    }
+  }
+
+  updateMovers()
+  {
+    if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
+    {
+      for (var m = 0; m < NUM_MOVERS; m++)
+      {
+        this.movers[m].movementCalculateLocation();
+        this.movers[m].move();
+        if (this.movers[m].velocity.mag() > 0.5)
+        {
+          this.input(this.movers[m].location.x, this.movers[m].location.y);
+        }
+      }
+    }
+  }
+
+  resetMovers()
+  {
+    this.movers = [];
+    for (var i = 0; i < NUM_MOVERS; i++)
+    {
+      var target = createVector(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+      var ball = new MovingBall(target.x, target.y);
+      this.movers.push(ball);
+    }
   }
 
   resetOscillators()
@@ -394,6 +451,14 @@ class Canvas
     this.input(int(Math.random() * GRID_WIDTH), int(Math.random() * GRID_HEIGHT), mag);
   }
 
+  moverInput(xPx, yPx)
+  {
+    if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
+    {
+      this.movers[this.activeMover].setTarget(xPx, yPx);
+    }
+  }
+
   input(xPx, yPx, mag=DEFAULT_CLICK_MAGNITUDE)
   {
     var cellX = int(xPx / CELL_WIDTH_PX);
@@ -403,7 +468,7 @@ class Canvas
       myCanvas.grid.setCellVal(cellX, cellY, mag);
     }
 
-    if (MIRROR_CLICKS)
+    if (MIRROR_CLICKS && GRID_WIDTH - cellX < GRID_WIDTH && GRID_WIDTH - cellX >= 0 && GRID_HEIGHT - cellY < GRID_HEIGHT && GRID_HEIGHT - cellY >= 0)
     {
       myCanvas.grid.setCellVal(GRID_WIDTH - cellX, GRID_HEIGHT - cellY, DEFAULT_CLICK_MAGNITUDE);
     }
@@ -432,98 +497,16 @@ class Canvas
   }
 }
 
-
-// END OF RIPPLES
 ////////////////////////
-
-// a shader variable
-let theShader;
-let rawGrid;
-myCanvas = new Canvas();
-p5jsCanvas = undefined;
-var lastFrameTs = 0;
-var fps = 0;
-var timeSinceLastFrameMsMs = 0;
-
-function preload(){
-  // load the shader
-  if (USE_CUSTOM_SHADER)
-  {
-    theShader = loadShader('shader_practice.vert', 'shader_practice.frag');
-  }
-}
-
-
-// TEST
-let cam;
-
-function setup()
-{
-  if (!USE_CUSTOM_SHADER)
-  {
-    p5sjCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
-    colorMode(HSB, H_MAX, S_MAX, V_MAX);
-    background(DEFAULT_BACKGROUND);
-    textSize(12);
-    smooth(8);
-  }
-  else
-  {
-    p5sjCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT, WEBGL);
-    pixelDensity(1); // disable scaling for retina displays
-    noStroke();
-
-    cam = createCapture(VIDEO);
-    cam.size(WINDOW_WIDTH, WINDOW_HEIGHT);
-
-    cam.hide();
-  }
-}
-
-function draw()
-{
-  var frameTs = Date.now();
-
-  if (lastFrameTs != 0)
-  {
-    timeSinceLastFrameMsMs = frameTs - lastFrameTs;
-    fps = int(1000 / timeSinceLastFrameMsMs);
-
-    if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
-    {
-      return;
-    }
-  }
-  lastFrameTs = frameTs;
-  myCanvas.updateCanvas();
-  if (!USE_CUSTOM_SHADER)
-  {
-    myCanvas.drawCanvas();
-    myCanvas.drawDebugPanel();
-  }
-  else
-  {
-    // shader() sets the active shader with our shader
-    shader(theShader);
-
-    theShader.setUniform('resolution', [WINDOW_WIDTH, WINDOW_HEIGHT]);
-    theShader.setUniform('mouse', [mouseX, mouseY]);
-    theShader.setUniform('gridSize', [GRID_SIZE_X, GRID_SIZE_Y]);
-    theShader.setUniform('cellSize', [CELL_SIZE_X, CELL_SIZE_Y]);
-    theShader.setUniform('time', frameCount * 0.01);
-
-    //theShader.setUniform('grid', myCanvas.grid.getCurrent());
-    theShader.setUniform('grid', cam);
-
-    // rect gives us some geometry on the screen
-    rect(0,0,WINDOW_WIDTH,WINDOW_HEIGHT);
-  }
-}
 
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
-  if (LONG_INPUT)
+  if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
+  {
+    myCanvas.moverInput(mouseX, mouseY);
+  }
+  else if (LONG_INPUT)
   {
     myCanvas.longInput(mouseX, mouseY);
   }
@@ -535,7 +518,11 @@ function mouseClicked()
 
 function mouseDragged()
 {
-  if (LONG_INPUT)
+  if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
+  {
+    myCanvas.moverInput(mouseX, mouseY);
+  }
+  else if (LONG_INPUT)
   {
     myCanvas.longInput(mouseX, mouseY, LONG_INPUT_MAGNITUDE);
   }
@@ -545,8 +532,12 @@ function mouseDragged()
   }
 }
 
-function windowResized(){ // disable rescaling on window resizing
-  resizeCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+function mouseMoved()
+{
+}
+
+function mouseWheel()
+{
 }
 
 function keyPressed()
@@ -555,6 +546,10 @@ function keyPressed()
   if (key == 'r')
   {
     myCanvas.reset();
+  }
+  if (key == 'R')
+  {
+    myCanvas.resetMovers();
   }
   if (key == 's')
   {
@@ -567,6 +562,10 @@ function keyPressed()
   if (key == 'b')
   {
     myCanvas.behaviorSetNext();
+  }
+  if (key == 'B')
+  {
+    myCanvas.behavior = BEHAVIOR_NONE;
   }
   if (key == 'd')
   {
@@ -582,4 +581,59 @@ function keyPressed()
     LONG_INPUT = !LONG_INPUT;
     console.log("LONG INPUT ", LONG_INPUT);
   }
+  if (key == 'i')
+  {
+    IMAGE_DRAW_METHOD = !IMAGE_DRAW_METHOD;
+    console.log("DRAW METHOD FLIPPED");
+  }
+  if (key == '0' || key == '1' || key == '2' || key == '3' || key == '4' || key == '5')
+  {
+    var num = parseInt(key, 10);
+    if (num < NUM_MOVERS)
+    {
+      myCanvas.setActiveMover(num);
+    }
+  }
+}
+
+function keyReleased()
+{
+  console.log("KEY RELEASED", key);
+}
+
+
+////////////////////////
+
+myCanvas = undefined; 
+p5jsCanvas = undefined;
+function setup()
+{
+  p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+  colorMode(HSB, H_MAX, S_MAX, V_MAX);
+  background(DEFAULT_BACKGROUND);
+  textSize(12);
+  smooth(0);
+  myCanvas = new Canvas();
+}
+
+var lastFrameTs = 0;
+var fps = 0;
+var timeSinceLastFrameMsMs = 0;
+function draw()
+{
+  var frameTs = Date.now();
+  if (lastFrameTs != 0)
+  {
+    timeSinceLastFrameMsMs = frameTs - lastFrameTs;
+    fps = int(1000 / timeSinceLastFrameMsMs);
+
+    if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
+    {
+      return;
+    }
+  }
+  lastFrameTs = frameTs;
+  myCanvas.updateCanvas();
+  myCanvas.drawCanvas();
+  myCanvas.drawDebugPanel();
 }

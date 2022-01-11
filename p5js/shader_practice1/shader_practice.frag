@@ -12,6 +12,8 @@ uniform vec2 gridSize;
 uniform vec2 cellSize;
 uniform sampler2D grid;
 
+uniform sampler2D test;
+
 // this is a function that turns an rgb value that goes from 0 - 255 into 0.0 - 1.0
 vec3 rgb(float r, float g, float b){
   return vec3(r / 255.0, g / 255.0, b / 255.0);
@@ -33,6 +35,12 @@ void main()
   //float myVal = grid[(gridSize.y * myCell.y) + myCell.x];
   //float myValNorm = myVal / 10.0;
 
+  //vec2 test = (0.0, 0.0);
+  vec4 data = texture2D(grid, vec2(0.0, 0.0));
+  
+
+
   //gl_FragColor = vec4(st.x * mo.x, 0.0, st.y * mo.y, 1);
   gl_FragColor = vec4(myCellNorm.x, 0, 0, 1);
+  //gl_FragColor = data;
 }
