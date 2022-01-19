@@ -499,6 +499,62 @@ class Canvas
 
 ////////////////////////
 
+function autoInputClicked(x, y)
+{
+  console.log("AUTO INPUT", x, y);
+  if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
+  {
+    myCanvas.moverInput(x, y);
+  }
+  else
+  {
+    myCanvas.input(mouseX, mouseY);
+  }
+}
+
+// This object expects an array of inputs, each element of which looks like
+// [time, x, y]
+class AutoInput
+{
+  constructor(inputList)
+  {
+    this.initTs = Date.now();
+    this.inputList = inputList;
+    this.idx = 0;
+    this.playing = false;
+  }
+
+  start()
+  {
+    if (inputList.length == 0)
+    {
+      return;
+    }
+    this.playing = true;
+    this.initiateNext();
+  }
+
+  stop()
+  {
+    this.playing = false;
+  }
+
+  initiateNext()
+  {
+    time = this.inputList[this.idx][0];
+    x = this.inputList[this.idx][1];
+    y = this.inputList[this.idx][2];
+    setTimeout( function() { autoInputClicked(x, y); } , time);
+  }
+
+  fire()
+  {
+    
+  }
+}
+
+////////////////////////
+
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
