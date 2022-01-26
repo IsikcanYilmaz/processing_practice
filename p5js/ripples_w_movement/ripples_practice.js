@@ -77,6 +77,9 @@ var MOVEMENT_METHOD_MOVER = 0;
 var MOVEMENT_METHOD_MOUSE = 1;
 var CURRENT_MOVEMENT_METHOD = MOVEMENT_METHOD_MOVER;
 
+var AUTO_INPUT_ENABLED = false;
+var AUTO_INPUT_LIST = [[1000, 102, 212], [5000, 608, 183], [5000, 228, 777], [5000, 747, 775]];
+
 var NUM_MOVERS = 4;
 var ACTIVE_MOVER = 0;
 
@@ -499,34 +502,29 @@ class Canvas
 
 ////////////////////////
 
-function autoInputClicked(x, y)
-{
-  console.log("AUTO INPUT", x, y);
-  if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
-  {
-    myCanvas.moverInput(x, y);
-  }
-  else
-  {
-    myCanvas.input(mouseX, mouseY);
-  }
-}
-
 // This object expects an array of inputs, each element of which looks like
-// [time, x, y]
+// [time, x, y], where time is in Ms
+// fn should be the function to be called per the input times
 class AutoInput
 {
-  constructor(inputList)
+  constructor(inputList, fn)
   {
     this.initTs = Date.now();
     this.inputList = inputList;
     this.idx = 0;
     this.playing = false;
+    this.fn = fn;
+    this.loopEnabled = false;
+  }
+
+  setLoopEnabled(l)
+  {
+    this.loopEnabled = l;
   }
 
   start()
   {
-    if (inputList.length == 0)
+    if (this.inputList.length == 0)
     {
       return;
     }
@@ -541,17 +539,43 @@ class AutoInput
 
   initiateNext()
   {
-    time = this.inputList[this.idx][0];
-    x = this.inputList[this.idx][1];
-    y = this.inputList[this.idx][2];
-    setTimeout( function() { autoInputClicked(x, y); } , time);
+    if (this.playing = false)
+    {
+      return false;
+    }
+    if (this.idx >= this.inputList.length)
+    {
+      if (this.loopEnabled)
+      {
+        this.idx = 0;
+      }
+      else
+      {
+        return false;
+      }
+    }
+    var time = this.inputList[this.idx][0];
+    var x = this.inputList[this.idx][1];
+    var y = this.inputList[this.idx][2];
+    console.log("Initiating", x, y, "for time", time, "at", this.initTs);
+    var me = this;
+    setTimeout( function() { me.fire(x, y); } , time);
   }
 
-  fire()
+  fire(x, y)
   {
-    
+    this.fn(x, y);
+    this.idx++;
+    this.initiateNext();
+  }
+
+  reset()
+  {
+    this.idx = 0;
+    this.playing = false;
   }
 }
+
 
 ////////////////////////
 
@@ -642,6 +666,24 @@ function keyPressed()
     IMAGE_DRAW_METHOD = !IMAGE_DRAW_METHOD;
     console.log("DRAW METHOD FLIPPED");
   }
+  if (key == 'a')
+  {
+    AUTO_INPUT_ENABLED = !AUTO_INPUT_ENABLED;
+    console.log("AUTO INPUT", AUTO_INPUT_ENABLED);
+    if (AUTO_INPUT_ENABLED)
+    {
+      autoInput.start();
+    }
+    else
+    {
+      autoInput.stop();
+    }
+  }
+  if (key == 'A')
+  {
+    console.log("RESETTING AUTO INPUTTER");
+    autoInput.reset();
+  }
   if (key == '0' || key == '1' || key == '2' || key == '3' || key == '4' || key == '5')
   {
     var num = parseInt(key, 10);
@@ -657,11 +699,24 @@ function keyReleased()
   console.log("KEY RELEASED", key);
 }
 
+function autoInputClicked(x, y)
+{
+  console.log("AUTO INPUT", x, y);
+  if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
+  {
+    myCanvas.moverInput(x, y);
+  }
+  else
+  {
+    myCanvas.input(x, y);
+  }
+}
 
 ////////////////////////
 
 myCanvas = undefined; 
 p5jsCanvas = undefined;
+autoInput = undefined;
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -670,6 +725,8 @@ function setup()
   textSize(12);
   smooth(0);
   myCanvas = new Canvas();
+  autoInput = new AutoInput(AUTO_INPUT_LIST, autoInputClicked);
+  autoInput.setLoopEnabled(true);
 }
 
 var lastFrameTs = 0;
