@@ -12,14 +12,14 @@ var TAU = Math.PI * 2;
 ////////////////////////
 
 var SAVE_FRAMES = false;
-var SAVE_NUM_FRAMES = 30 * 20;
+var SAVE_NUM_FRAMES = 30 * 63;
 
 var FRAME_LIMITING = false;
-var FRAME_PER_SECOND = 10;
+var FRAME_PER_SECOND = 30;
 if (SAVE_FRAMES)
 {
   FRAME_LIMITING = true;
-  FRAME_PER_SECOND = 15;
+  FRAME_PER_SECOND = 5;
 }
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
@@ -75,11 +75,32 @@ var IMAGE_DRAW_METHOD = true;
 
 var MOVEMENT_METHOD_MOVER = 0;
 var MOVEMENT_METHOD_MOUSE = 1;
-var CURRENT_MOVEMENT_METHOD = MOVEMENT_METHOD_MOVER;
+var CURRENT_MOVEMENT_METHOD = MOVEMENT_METHOD_MOUSE;
 
 var AUTO_INPUT_ENABLED = false;
-var AUTO_INPUT_LIST = [[1000, 102, 212], [5000, 608, 183], [5000, 228, 777], [5000, 747, 775]];
+var AUTO_INPUT_MODE_FRAME = true;
+var AUTO_INPUT_LOOP = false;
 
+var AUTO_INPUT_LIST_TIME  = [[1000, "mouse", 102, 212], 
+                           [5000, "key", "2"], 
+                           [5000, "mouse", 228, 777], 
+                           [5000, "key", "0"]];
+
+var AUTO_FRAME_COEFF = 28;
+var AUTO_INPUT_LIST_FRAME = [[0, "key", "m"],
+                           [0, "mouse", 267, 482], 
+                           [AUTO_FRAME_COEFF * 1, "mouse", 206, 390], 
+                           [AUTO_FRAME_COEFF * 2, "mouse", 257, 359], 
+                           [AUTO_FRAME_COEFF * 2, "mouse", 355, 270],
+                           [AUTO_FRAME_COEFF * 2, "mouse", 458, 422],
+                           [AUTO_FRAME_COEFF * 2, "mouse", 458, 422],
+                           [AUTO_FRAME_COEFF * (30-7), "wait"],
+                           [0, "key", "2"],
+                           [AUTO_FRAME_COEFF * 0, "mouse", 576, 679], 
+                           [AUTO_FRAME_COEFF * 2, "mouse", 377, 836], 
+                           [AUTO_FRAME_COEFF * 2, "mouse", 432, 622],
+                           [AUTO_FRAME_COEFF * 2, "mouse", 575, 488],
+                           [AUTO_FRAME_COEFF * (29-8), "key", "M"]];
 var NUM_MOVERS = 4;
 var ACTIVE_MOVER = 0;
 
@@ -505,21 +526,74 @@ class Canvas
 // This object expects an array of inputs, each element of which looks like
 // [time, x, y], where time is in Ms
 // fn should be the function to be called per the input times
+// [time, type<str>, data**]
+// for type == "mouse":
+//  data looks like <x, y>, [time, "mouse", x, y]
+// for type == "key":
+//  data looks like <key>,  [time, "key", k]
+//  Can work based off of "time" or "frames". If it's based off of frames, one needs to call the updateFrame() member function continuously
 class AutoInput
 {
-  constructor(inputList, fn)
+  constructor(inputList, mousein, keyin)
   {
     this.initTs = Date.now();
     this.inputList = inputList;
     this.idx = 0;
     this.playing = false;
-    this.fn = fn;
+    this.mousein = mousein;
+    this.keyin = keyin;
     this.loopEnabled = false;
+    this.mode = "time";
+    this.frame = 0;
+    this.lastFiredFrame = 0;
   }
 
   setLoopEnabled(l)
   {
     this.loopEnabled = l;
+  }
+
+  setMode(modeStr)
+  {
+    if (modeStr != "time" && modeStr != "frame")
+    {
+      console.log("modeStr needs to be either \"time\" or \"frame\"");
+      return;
+    }
+    this.mode = modeStr;
+  }
+
+  updateFrame()
+  {
+    if (this.mode != "frame")
+    {
+      console.log("updateFrame in invalid mode!");
+      return;
+    }
+    if (this.playing = false)
+    {
+      return false;
+    }
+    if (this.idx >= this.inputList.length)
+    {
+      if (this.loopEnabled)
+      {
+        this.idx = 0;
+        this.frame = 0;
+        this.lastFiredFrame = 0;
+      }
+      else
+      {
+        return false;
+      }
+    }
+
+    this.frame++;
+    if (this.frame >= this.lastFiredFrame + this.inputList[this.idx][0])
+    {
+      this.lastFiredFrame = this.frame;
+      this.fire(this.inputList[this.idx]);
+    }
   }
 
   start()
@@ -529,7 +603,10 @@ class AutoInput
       return;
     }
     this.playing = true;
-    this.initiateNext();
+    if (this.mode == "time")
+    {
+      this.initiateNext();
+    }
   }
 
   stop()
@@ -555,33 +632,57 @@ class AutoInput
       }
     }
     var time = this.inputList[this.idx][0];
-    var x = this.inputList[this.idx][1];
-    var y = this.inputList[this.idx][2];
-    console.log("Initiating", x, y, "for time", time, "at", this.initTs);
+    console.log("Initiating entry", this.idx, "for time", time, "at", this.initTs);
     var me = this;
-    setTimeout( function() { me.fire(x, y); } , time);
+    this.timer = setTimeout( function() { me.fire(me.inputList[me.idx]); } , time);
   }
 
-  fire(x, y)
+  fire(entry)
   {
-    this.fn(x, y);
+    console.log("FIRING ENTRY", entry);
+    switch(entry[1])
+    {
+      case "mouse":
+      {
+        this.mousein(entry[2], entry[3]);
+        break;
+      }
+      case "key":
+      {
+        this.keyin(entry[2]);
+        break;
+      }
+      case "wait":
+      {
+        break;
+      }
+      default:
+      {
+        console.log("BAD ENTRY", entry);
+        break;
+      }
+    }
     this.idx++;
-    this.initiateNext();
+    if (this.mode == "time")
+    {
+      this.initiateNext();
+    }
   }
 
   reset()
   {
     this.idx = 0;
     this.playing = false;
+    this.frame = 0;
+    clearTimeout(this.timer);
   }
 }
 
 
 ////////////////////////
 
-function mouseClicked()
+function mouseClickedGeneric(mouseX, mouseY)
 {
-  console.log("MOUSE CLICKED", mouseX, mouseY);
   if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
   {
     myCanvas.moverInput(mouseX, mouseY);
@@ -596,20 +697,15 @@ function mouseClicked()
   }
 }
 
+function mouseClicked()
+{
+  console.log("MOUSE CLICKED", mouseX, mouseY);
+  mouseClickedGeneric(mouseX, mouseY);
+}
+
 function mouseDragged()
 {
-  if (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOVER)
-  {
-    myCanvas.moverInput(mouseX, mouseY);
-  }
-  else if (LONG_INPUT)
-  {
-    myCanvas.longInput(mouseX, mouseY, LONG_INPUT_MAGNITUDE);
-  }
-  else
-  {
-    myCanvas.input(mouseX, mouseY);
-  }
+  mouseClickedGeneric(mouseX, mouseY);
 }
 
 function mouseMoved()
@@ -620,7 +716,7 @@ function mouseWheel()
 {
 }
 
-function keyPressed()
+function keyPressedGeneric(key)
 {
   console.log("KEY PRESSED", key);
   if (key == 'r')
@@ -630,6 +726,7 @@ function keyPressed()
   if (key == 'R')
   {
     myCanvas.resetMovers();
+    autoInput.reset();
   }
   if (key == 's')
   {
@@ -638,6 +735,10 @@ function keyPressed()
   if (key == 'm')
   {
     MIRROR_CLICKS = !MIRROR_CLICKS;
+  }
+  if (key == 'M')
+  {
+    myCanvas.resetMovers();
   }
   if (key == 'b')
   {
@@ -649,7 +750,7 @@ function keyPressed()
   }
   if (key == 'd')
   {
-    //DEBUG_VALS = !DEBUG_VALS;
+    CURRENT_MOVEMENT_METHOD = (CURRENT_MOVEMENT_METHOD == MOVEMENT_METHOD_MOUSE) ? MOVEMENT_METHOD_MOVER : MOVEMENT_METHOD_MOUSE;
   }
   if (key == 'f')
   {
@@ -694,6 +795,11 @@ function keyPressed()
   }
 }
 
+function keyPressed()
+{
+  keyPressedGeneric(key)
+}
+
 function keyReleased()
 {
   console.log("KEY RELEASED", key);
@@ -725,8 +831,23 @@ function setup()
   textSize(12);
   smooth(0);
   myCanvas = new Canvas();
-  autoInput = new AutoInput(AUTO_INPUT_LIST, autoInputClicked);
-  autoInput.setLoopEnabled(true);
+  if (AUTO_INPUT_MODE_FRAME)
+  {
+    autoInput = new AutoInput(AUTO_INPUT_LIST_FRAME, mouseClickedGeneric, keyPressedGeneric);
+    autoInput.setMode("frame");
+  }
+  else
+  {
+    autoInput = new AutoInput(AUTO_INPUT_LIST_TIME, mouseClickedGeneric, keyPressedGeneric);
+    autoInput.setMode("time");
+  }
+  autoInput.setLoopEnabled(AUTO_INPUT_LOOP);
+
+  if (SAVE_FRAMES)
+  {
+    AUTO_INPUT_ENABLED = !AUTO_INPUT_ENABLED;
+    autoInput.start();
+  }
 }
 
 var lastFrameTs = 0;
@@ -739,11 +860,14 @@ function draw()
   {
     timeSinceLastFrameMsMs = frameTs - lastFrameTs;
     fps = int(1000 / timeSinceLastFrameMsMs);
-
     if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
     {
       return;
     }
+  }
+  if (AUTO_INPUT_MODE_FRAME && AUTO_INPUT_ENABLED)
+  {
+    autoInput.updateFrame();
   }
   lastFrameTs = frameTs;
   myCanvas.updateCanvas();
