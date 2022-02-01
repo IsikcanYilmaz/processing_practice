@@ -33,18 +33,267 @@ var DEBUG_PAUSING = false;
 
 ////////////////////////
 
+class GoLCell
+{
+  constructor(x, y, board)
+  {
+    this.alive = false;
+    this.x = x;
+    this.y = y;
+    this.board = board;
+  }
+
+  set(alive)
+  {
+    this.alive = alive;
+  }
+
+
+}
+
+class GoLBoard
+{
+  constructor()
+  {
+    this.currentFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.coloredFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => [0,0,100]));
+    this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
+    this.playing = true;
+    this.showAliveCells = true;
+    this.lastUpdateTimestamp = 0;
+    this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
+  }
+
+  setFrameFrequency(hz)
+  {
+    if (hz > UPDATE_PER_SECOND_MAX)
+    {
+      hz = UPDATE_PER_SECOND_MAX;
+    }
+    if (hz < UPDATE_PER_SECOND_MIN)
+    {
+      hz = UPDATE_PER_SECOND_MIN;
+    }
+    this.frameFrequency = hz;
+    this.framePeriod = 1.0/hz;
+    this.framePeriodMs = this.framePeriod * 1000;
+    console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
+  }
+
+  getFrameFrequency()
+  {
+    return this.frameFrequency;
+  }
+
+  reset()
+  {
+    this.currentFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.coloredFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => [0,0,100]));
+    this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
+    this.playing = true;
+    this.showAliveCells = true;
+  }
+
+  togglePause()
+  {
+    this.playing = !this.playing;
+    if (this.playing)
+    {
+      console.log("UNPAUSED");
+    }
+    else
+    {
+      console.log("PAUSED");
+    }
+  }
+
+  toggleShowAliveCells()
+  {
+    this.showAliveCells = !this.showAliveCells;
+  }
+
+  setCell(x, y)
+  {
+    console.log("X", x, "Y", y);
+    this.currentFrame[y][x] = 1;
+    this.coloredFrame[y][x] = [0,0,0];
+  }
+
+  getCell(x, y)
+  {
+    return this.currentFrame[y][x];
+  }
+
+  getNumberOfAliveNeighbors(x, y)
+  {
+    var numAliveNeighbors = 0;
+    for (var yDir = -1; yDir <= 1; yDir++)
+    {
+      for (var xDir = -1; xDir <= 1; xDir++)
+      {
+        if (xDir == 0 && yDir == 0)
+        {
+          continue;
+        }
+        if (xDir == -1 && x == 0)
+        {
+          continue;
+        }
+        if (xDir == 1 && x == GRID_WIDTH - 1)
+        {
+          continue;
+        }
+        if (yDir == -1 && y == 0)
+        {
+          continue;
+        }
+        if (yDir == 1 && y == GRID_HEIGHT - 1)
+        {
+          continue;
+        }
+        var neighborState = this.currentFrame[y+yDir][x+xDir];
+        if (neighborState == 1)
+        {
+          numAliveNeighbors++;
+        }
+      }
+    }
+    return numAliveNeighbors;
+  }
+
+  printFrame()
+  {
+    for (var y = 0; y < GRID_HEIGHT; y++)
+    {
+      console.log(this.currentFrame[GRID_HEIGHT - y - 1], " | ", this.nextFrame[GRID_HEIGHT - y - 1]);
+    }
+  }
+
+  updateBoard()
+  {
+    if (!this.playing)
+    {
+      return;
+    }
+
+    // Frame per second limiting
+    var now = Date.now();
+    if (now - this.lastUpdateTimestamp < this.framePeriodMs)
+    {
+      return;
+    }
+    else
+    {
+      this.lastUpdateTimestamp = now;
+    }
+
+    for (var y = 0; y < this.currentFrame.length; y++)
+    {
+      for (var x = 0; x < this.currentFrame[y].length; x++)
+      {
+        var neighbors = [];
+        var currentValue = this.getCell(x, y);
+        var numAliveNeighbors = this.getNumberOfAliveNeighbors(x, y);
+
+        var cellLives = false;
+        // is alive and one or no neighbors
+        if (currentValue > 0 && numAliveNeighbors < 2)
+        {
+          cellLives = false;
+          this.coloredFrame[y][x] = this.color;
+        }
+
+        // is alive and 2 or 3 alive neighbors
+        if (currentValue > 0 && (numAliveNeighbors == 2 || numAliveNeighbors == 3))
+        {
+          cellLives = true;
+        }
+
+        // is alive and more than 4 alive neighbors
+        if (currentValue > 0 && numAliveNeighbors >= 4)
+        {
+          cellLives = false;
+          this.coloredFrame[y][x] = this.color;
+        }
+
+        // is dead and 3 alive neighbors
+        if (currentValue == 0 && numAliveNeighbors == 3)
+        {
+          cellLives = true;
+        }
+
+        this.nextFrame[y][x] = (cellLives ? 1 : 0);
+      }
+    }
+    this.currentFrame = this.nextFrame;
+    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+
+    var newh = (this.color[0] + H_DELTA) % H_MAX;
+    var news = this.color[1];
+    var newv = this.color[2];
+    this.color = [newh, news, newv];
+  }
+
+  drawBoard()
+  {
+    for (var y = 0; y < GRID_HEIGHT; y++)
+    {
+      for (var x = 0; x < GRID_WIDTH; x++)
+      {
+        var cellColor = this.coloredFrame[y][x];
+        if (this.getCell(x, y) == 1)
+        {
+          if (this.showAliveCells)
+          {
+            fill(0, 0, 0);
+          }
+          else
+          {
+            fill(cellColor[0], cellColor[1], cellColor[2]);
+          }
+        }
+        else
+        {
+          if (COLORED)
+          {
+            fill(cellColor[0], cellColor[1], cellColor[2]);
+          }
+          else
+          {
+            fill(0, 0, 100);
+          }
+        }
+
+        rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
+        this.coloredFrame[y][x] = [(cellColor[0] - H_DECAY < 0) ? 0 : (cellColor[0] - H_DECAY), 
+          (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
+          (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)];
+      }
+    }
+  }
+}
+
+////////////////////////
+
+
+
 class Canvas 
 {
   constructor()
   {
+    this.board = new GoLBoard();
   }
 
   updateCanvas()
   {
+    this.board.updateBoard();
   }
 
   drawCanvas()
   {
+    this.board.drawBoard();
   }
 
   drawDebugPanel()
@@ -133,6 +382,7 @@ class Canvas
 }
 
 ////////////////////////
+
 
 function mouseMoved()
 {
