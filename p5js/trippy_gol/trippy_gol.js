@@ -1,6 +1,3 @@
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
-
 var H_MAX = 360;
 var S_MAX = 100;
 var V_MAX = 100;
@@ -14,6 +11,49 @@ var PI  = Math.PI;
 var TAU = Math.PI * 2;
 
 ////////////////////////
+
+var WINDOW_HEIGHT = 400;
+var WINDOW_WIDTH  = 400;
+var GRID_CELLS_Y = 50;
+var GRID_CELLS_X = 50;
+
+var INPUT_MIRROR = false;
+var VISUAL_MIRROR = true;
+
+var GRID_RENDER_CELL_WIDTH = (WINDOW_WIDTH/GRID_CELLS_X);
+var GRID_RENDER_CELL_HEIGHT = (WINDOW_HEIGHT/GRID_CELLS_Y);
+var GRID_HEIGHT = GRID_CELLS_Y * GRID_RENDER_CELL_WIDTH;
+var GRID_WIDTH  = GRID_CELLS_X * GRID_RENDER_CELL_WIDTH;
+if (VISUAL_MIRROR)
+{
+  GRID_RENDER_CELL_HEIGHT /= 2;
+  GRID_RENDER_CELL_WIDTH /= 2;
+  GRID_HEIGHT /= 2;
+  GRID_WIDTH /= 2;
+}
+
+var DRAW_CIRCLE_GRANULARITY = 360;
+var DRAW_CIRCLE_RAND_MAX = 200;
+var DRAW_CIRCLE_RAND_MIN = 20;
+
+var H_DEFAULT = 0;
+var S_DEFAULT = 100;
+var V_DEFAULT = 100;
+
+var H_DELTA = 2;
+var H_DECAY = 0;
+var S_DECAY = 0.25;
+var V_DECAY = 0;
+
+var COLORED = false;
+var STROKE_WEIGHT = 0;
+
+var DEFAULT_UPDATE_PER_SECOND = 1;
+var UPDATE_PER_SECOND_MAX = 30;
+var UPDATE_PER_SECOND_MIN = 0.5;
+
+var MOUSE_WHEEL_SMOOTHING_COEFF = 0.001;
+var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
 var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
@@ -47,19 +87,17 @@ class GoLCell
   {
     this.alive = alive;
   }
-
-
 }
 
 class GoLBoard
 {
   constructor()
   {
-    this.currentFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
-    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
-    this.coloredFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => [0,0,100]));
+    this.currentFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
+    this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [0,0,100]));
     this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
-    this.playing = true;
+    this.playing = false;
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
@@ -88,11 +126,11 @@ class GoLBoard
 
   reset()
   {
-    this.currentFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
-    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
-    this.coloredFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => [0,0,100]));
+    this.currentFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
+    this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [0,0,100]));
     this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
-    this.playing = true;
+    this.playing = false;
     this.showAliveCells = true;
   }
 
@@ -116,9 +154,18 @@ class GoLBoard
 
   setCell(x, y)
   {
-    console.log("X", x, "Y", y);
+    //console.log("X", x, "Y", y);
     this.currentFrame[y][x] = 1;
     this.coloredFrame[y][x] = [0,0,0];
+    if (INPUT_MIRROR)
+    {
+      this.currentFrame[y][GRID_CELLS_X - x] = 1;
+      this.currentFrame[GRID_CELLS_Y-y][x] = 1;
+      this.currentFrame[GRID_CELLS_Y-y][GRID_CELLS_X - x] = 1;
+      this.coloredFrame[y][GRID_CELLS_X-x] = [0,0,0];
+      this.coloredFrame[GRID_CELLS_Y-y][x] = [0,0,0];
+      this.coloredFrame[GRID_CELLS_Y-y][GRID_CELLS_X-x] = [0,0,0];
+    }
   }
 
   getCell(x, y)
@@ -141,7 +188,7 @@ class GoLBoard
         {
           continue;
         }
-        if (xDir == 1 && x == GRID_WIDTH - 1)
+        if (xDir == 1 && x == GRID_CELLS_X - 1)
         {
           continue;
         }
@@ -149,7 +196,7 @@ class GoLBoard
         {
           continue;
         }
-        if (yDir == 1 && y == GRID_HEIGHT - 1)
+        if (yDir == 1 && y == GRID_CELLS_Y - 1)
         {
           continue;
         }
@@ -165,9 +212,9 @@ class GoLBoard
 
   printFrame()
   {
-    for (var y = 0; y < GRID_HEIGHT; y++)
+    for (var y = 0; y < GRID_CELLS_Y; y++)
     {
-      console.log(this.currentFrame[GRID_HEIGHT - y - 1], " | ", this.nextFrame[GRID_HEIGHT - y - 1]);
+      console.log(this.currentFrame[GRID_CELLS_Y - y - 1], " | ", this.nextFrame[GRID_CELLS_Y - y - 1]);
     }
   }
 
@@ -228,7 +275,7 @@ class GoLBoard
       }
     }
     this.currentFrame = this.nextFrame;
-    this.nextFrame = Array.from({ length: GRID_WIDTH }, () => Array.from({ length: GRID_HEIGHT }, () => 0));
+    this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
 
     var newh = (this.color[0] + H_DELTA) % H_MAX;
     var news = this.color[1];
@@ -238,9 +285,9 @@ class GoLBoard
 
   drawBoard()
   {
-    for (var y = 0; y < GRID_HEIGHT; y++)
+    for (var y = 0; y < GRID_CELLS_Y; y++)
     {
-      for (var x = 0; x < GRID_WIDTH; x++)
+      for (var x = 0; x < GRID_CELLS_X; x++)
       {
         var cellColor = this.coloredFrame[y][x];
         if (this.getCell(x, y) == 1)
@@ -265,8 +312,15 @@ class GoLBoard
             fill(0, 0, 100);
           }
         }
-
+        
+        strokeWeight(STROKE_WEIGHT);
         rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
+        if (VISUAL_MIRROR)
+        {
+          rect(GRID_WIDTH - GRID_RENDER_CELL_WIDTH + (GRID_CELLS_X-x) * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
+          rect(x * GRID_RENDER_CELL_WIDTH, GRID_HEIGHT - GRID_RENDER_CELL_HEIGHT + (GRID_CELLS_Y-y) * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
+          rect(GRID_WIDTH - GRID_RENDER_CELL_WIDTH + (GRID_CELLS_X-x) * GRID_RENDER_CELL_WIDTH, GRID_HEIGHT - GRID_RENDER_CELL_HEIGHT + (GRID_CELLS_Y-y) * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
+        }
         this.coloredFrame[y][x] = [(cellColor[0] - H_DECAY < 0) ? 0 : (cellColor[0] - H_DECAY), 
           (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
           (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)];
@@ -276,8 +330,6 @@ class GoLBoard
 }
 
 ////////////////////////
-
-
 
 class Canvas 
 {
@@ -305,73 +357,6 @@ class Canvas
       fill(0, 0, 0);
       text(str(fps), 0, WINDOW_HEIGHT - 5);
     }
-
-    if (DEBUG_LINES)
-    {
-      background(0, 0, 0);
-      stroke(0, 0, 100);
-      strokeWeight(1);
-      line(this.x + this.xoffset, 0, this.x + this.xoffset, WINDOW_HEIGHT);
-      //line(0, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
-      fill(0, 0, 100);
-      rect(0, WINDOW_HEIGHT - 40, 120, 20);
-      fill(0, 0, 0);
-      text("x:" + str(this.x + this.xoffset) + " y:" + str(int(this.y+this.yoffset)), 0, WINDOW_HEIGHT - 25);
-
-      // CENTER POINT
-      strokeWeight(10);
-      point(this.x + this.xoffset, this.y+this.yoffset); // center point
-
-      // TOP LINE
-      strokeWeight(1);
-      line(this.x + this.xoffset - 30, this.y + this.yoffset - 5, this.x + this.xoffset - 30, 0);
-
-      // BOTTOM LINE
-      strokeWeight(1);
-      line(this.x + this.xoffset - 30, this.y + this.yoffset + 5, this.x + this.xoffset - 30, WINDOW_HEIGHT);
-
-      // TOP LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text("len:" + str(int(this.y + this.yoffset)) + "\nmax:" + str(this.maxTopDistance), this.x + this.xoffset - 130, (this.y + this.yoffset)/2);
-
-      // BOTTOM LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text("len:" + str(int(WINDOW_HEIGHT - this.y - this.yoffset)) + "\nmax:" + str(this.maxBotDistance), this.x + this.xoffset - 130, (this.y + this.yoffset) + ((this.y + this.yoffset)/2));
-
-      // ELLIPSE TOP POINT
-      strokeWeight(10);
-      point(this.x+this.xoffset, this.y+this.yoffset-this.bubbleWidth/2);
-
-      // ELLIPSE BOTTOM POINT
-      strokeWeight(10);
-      point(this.x+this.xoffset, this.y+this.yoffset+this.bubbleWidth/2); 
-
-      // LEFT LINE
-      strokeWeight(1);
-      line(0, this.y + this.yoffset, this.x + this.xoffset, this.y + this.yoffset);
-
-      // RIGHT LINE
-      strokeWeight(1);
-      line(this.x + this.xoffset, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
-
-      // LEFT LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text(str("len:" + str(this.x + this.xoffset)), (this.x + this.xoffset) / 2, this.y + this.yoffset);
-
-      // RIGHT LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text(str("len:" + str(WINDOW_WIDTH - this.x - this.xoffset)), this.x + this.xoffset + ((WINDOW_WIDTH - this.x - this.xoffset) / 2) , this.y + this.yoffset);
-
-      // X Y OFFSET TEXTS
-      fill(0, 0, 100);
-      rect(0, WINDOW_HEIGHT - 100, 80, 50);
-      fill(0, 0, 0);
-      text("xoff:" + str(this.xoffset) + "\nyoff:" + str(this.yoffset), 0, WINDOW_HEIGHT - 85);
-    }
   }
 
   saveFrame()
@@ -379,26 +364,120 @@ class Canvas
     var filename = "trippy_gol-" + str(this.frameId).padStart(5, "0");
     saveCanvas(p5jsCanvas, filename, "jpg");
   }
+
+  mouseInput(x, y)
+  {
+    if (VISUAL_MIRROR)
+    {
+      if (x > GRID_WIDTH)
+      {
+        x = GRID_WIDTH - (x - GRID_WIDTH);
+      }
+      if (y > GRID_HEIGHT)
+      {
+        y = GRID_HEIGHT - (y - GRID_HEIGHT);
+      }
+    }
+    var cellX = int(x / GRID_RENDER_CELL_WIDTH);
+    var cellY = int(y / GRID_RENDER_CELL_HEIGHT);
+    if (cellX < GRID_CELLS_X && cellX >= 0 && cellY < GRID_CELLS_Y && cellY >= 0)
+    {
+      this.board.setCell(cellX, cellY);
+    }
+  }
+
+  changeBoardSpeedBy(d)
+  {
+    if (d > MOUSE_WHEEL_MAX_DELTA)
+    {
+      d = MOUSE_WHEEL_MAX_DELTA;
+    }
+    this.board.setFrameFrequency(this.board.getFrameFrequency() + event.delta);
+  }
+
+  togglePause()
+  {
+    this.board.togglePause();
+  }
+
+  drawCircle(centerx, centery, radius)
+  {
+    var vec = createVector(centerx, centery);
+    vec.setMag(radius);
+    for (var i = 0; i < DRAW_CIRCLE_GRANULARITY; i++)
+    {
+      this.mouseInput(centerx + vec.x, centery + vec.y);
+      vec.rotate(360 / DRAW_CIRCLE_GRANULARITY);
+    }
+  }
+
+  reset()
+  {
+    this.board.reset();
+  }
 }
 
 ////////////////////////
 
-
-function mouseMoved()
+function mouseClickedGeneric(mouseX, mouseY)
 {
+  myCanvas.mouseInput(mouseX, mouseY);
 }
 
-function mouseWheel()
-{
-}
-
-function keyPressed()
+function keyPressedGeneric(k)
 {
   console.log("KEY PRESSED", key);
   if (key == ' ')
   {
-    myCanvas.paused = false;
+    myCanvas.togglePause();
   }
+  if (key == 'r')
+  {
+    myCanvas.reset();
+  }
+  if (key == 'a')
+  {
+    myCanvas.board.toggleShowAliveCells();
+  }
+  if (key == 'c')
+  {
+    var centerx = WINDOW_WIDTH/2;
+    var centery = WINDOW_HEIGHT/2;
+    var r = Math.random() * (DRAW_CIRCLE_RAND_MAX - DRAW_CIRCLE_RAND_MIN) + DRAW_CIRCLE_RAND_MIN;
+    myCanvas.drawCircle(centerx, centery, r);
+  }
+  if (key == 'C')
+  {
+    var centerx = WINDOW_WIDTH/2;
+    var centery = WINDOW_HEIGHT/2;
+    var centerDiffX = Math.abs(centerx - mouseX);
+    var centerDiffY = Math.abs(centery - mouseY);
+    var r = createVector(centerDiffX, centerDiffY).mag();
+    myCanvas.drawCircle(centerx, centery, r);
+  }
+}
+
+function mouseClicked()
+{
+  console.log("MOUSE CLICKED", mouseX, mouseY);
+  mouseClickedGeneric(mouseX, mouseY);
+}
+
+function mouseDragged()
+{
+  mouseClickedGeneric(mouseX, mouseY);
+}
+
+function mouseWheel(event)
+{
+  var smoothDelta = event.delta * MOUSE_WHEEL_SMOOTHING_COEFF;
+  console.log("MOUSE WHEEL", event.delta, "CHANGE FREQ BY", smoothDelta);
+  myCanvas.changeBoardSpeedBy(smoothDelta);
+}
+
+function keyPressed()
+{
+  keyPressedGeneric(key);
 }
 
 function keyReleased()
@@ -419,7 +498,7 @@ function keyReleased()
 
 ////////////////////////
 
-myCanvas = new Canvas();
+myCanvas = undefined; 
 p5jsCanvas = undefined;
 function setup()
 {
@@ -428,6 +507,7 @@ function setup()
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
+  myCanvas = new Canvas();
 }
 
 var lastFrameTs = 0;
