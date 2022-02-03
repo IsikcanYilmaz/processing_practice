@@ -12,8 +12,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 400;
-var WINDOW_WIDTH  = 400;
+var WINDOW_HEIGHT = 800;
+var WINDOW_WIDTH  = 800;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -289,7 +289,11 @@ class GoLBoard
     {
       for (var x = 0; x < GRID_CELLS_X; x++)
       {
-        var cellColor = this.coloredFrame[y][x];
+        var cellColor = [0, 0, 100];
+        if (COLORED)
+        {
+          cellColor = this.coloredFrame[y][x];
+        }
         if (this.getCell(x, y) == 1)
         {
           if (this.showAliveCells)
@@ -303,14 +307,7 @@ class GoLBoard
         }
         else
         {
-          if (COLORED)
-          {
-            fill(cellColor[0], cellColor[1], cellColor[2]);
-          }
-          else
-          {
-            fill(0, 0, 100);
-          }
+          fill(cellColor[0], cellColor[1], cellColor[2]);
         }
         
         strokeWeight(STROKE_WEIGHT);
@@ -492,6 +489,11 @@ function keyReleased()
     background(0, 0, 0);
     DEBUG_LINES = !DEBUG_LINES;
     DEBUG_FPS = !DEBUG_FPS;
+  }
+  if (key == 'o')
+  {
+    COLORED = !COLORED;
+    console.log("COLORED:", COLORED);
   }
 }
 
