@@ -1,36 +1,43 @@
 // https://iquilezles.org/www/articles/palettes/palettes.htm
 
-var WINDOW_HEIGHT = 800;
+var WINDOW_HEIGHT = 400;
 var WINDOW_WIDTH  = 800;
 
-var H_MAX = 360;
-var S_MAX = 100;
-var V_MAX = 100;
+var R_MAX = 100;
+var G_MAX = 100;
+var B_MAX = 100;
 
-var DEFAULT_BACKGROUND = [0, 0, 0];
+var DEFAULT_BACKGROUND = [100, 100, 100];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
-
-var DEBUGVISUALS = false;
 
 var PI  = Math.PI;
 var TAU = Math.PI * 2;
 
-var COLUMNS = 30;
-var DEFAULT_SQUARE_WIDTH = 1;
-var DEFAULT_SQUARE_AREA_WIDTH = 20;
-var DEFAULT_X_OFFSET = 100;
-var DEFAULT_Y_OFFSET = 100;
-var DEFAULT_WIDTH_UP_SPEED = 0.3;
-var DEFAULT_WIDTH_DOWN_SPEED = 0.3;
-var DEFAULT_SQUARE_THICKNESS = 3;
-var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
-
-var SMALLEST_ELLIPSE_WIDTH = 1;
-
-var X_CLOSENESS_MODIFIER = 5;
-var Y_CLOSENESS_MODIFIER = 20;
-
 ////////////////////////
+
+var INIT_A = [0.5,0.5,0.5];
+var INIT_B = [0.5,0.5,0.5];
+var INIT_C = [1.0,1.0,1.0];
+var INIT_D = [0.0,0.33,0.67];
+var INIT_T0 = 0
+var INIT_T1 = 10
+var INIT_NUMGENS = 10
+var INIT_COLORS = 4;
+
+var KNOWN_NICE_PALETTES = [
+  [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [1.0, 1.0, 1.0], [0.30, 0.20, 0.20]], // Blue, metallic
+  [[1.938, 0.105, 1.812], [1.200, 1.057, 1.122], [0.523, 0.189, 0.293], [0.770, 0.073, 1.340]], // Pinkish
+  [[0.461, 1.645, 0.949], [1.930, 1.162, 0.709], [0.054, 0.412, 0.109], [0.823, 1.519, 1.271]], // Pink lemonade
+  [[0.995, 1.109, 0.868], [1.376, 1.029, 0.368], [1.585, 0.151, 1.083], [1.580, 1.648, 0.244]], // Warm blue and orange to white
+  [[0.192, 1.469, 0.886], [1.442, 0.921, 0.357], [0.206, 0.677, 1.119], [1.827, 0.234, 1.036]], // Pastel, lowsat blue, pink, orange, tan
+  [[1.839, 0.318, 0.253], [1.145, 0.510, 0.254], [0.855, 1.199, 1.221], [1.797, 0.306, 0.992]], // Neat fiery and purp
+  [[0.292, 0.838, 0.913], [0.706, 0.636, 0.885], [1.223, 0.641, 1.926], [1.576, 0.934, 0.874]], // Nice blues and some yeller
+];
+
+var RAND_MAX = 2.0;
+var RAND_MIN = 0.0;
+
+var STROKE_WEIGHT = 0;
 
 var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
@@ -44,303 +51,134 @@ if (SAVE_FRAMES)
 }
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
-var TOGGLE_DEBUG_ALLOWED = false;
-var DEBUG_LINES = false;
-var DEBUG_FPS = false;
-var DEBUG_PAUSING = false;
-
-var BLACKOUTS_ENABLED = true;
-var DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT = 12;
-
-////////////////////////
-
-class Oscillator 
+// t runs from 0 to 1. a, b, c, d are rgb vectors
+function IqPalette(t, a, b, c, d)
 {
-  constructor(increment, phase=0)
+  var rgb = [0, 0, 0];
+  for (var i = 0; i < rgb.length; i++)
   {
-    this.increment = increment;
-    this.phase = phase;
-    this.val = Math.sin(this.phase * PI);
-    this.prevVal = this.val;
-    this.goingUp = true;
-    this.prevGoingUp = this.goingUp;
+    rgb[i] = a[i] + b[i] * Math.cos(2 * PI * (c[i] * t + d[i]));
   }
-
-  update()
-  {
-    this.prevVal = this.val;
-    this.prevGoingUp = this.goingUp;
-    this.phase += this.increment;
-    this.val = Math.sin(this.phase * PI);
-    this.goingUp = (this.val > this.prevVal);
-  }
-
-  setIncrement(increment)
-  {
-    this.increment = increment;
-  }
-
-  getPhase()
-  {
-    return this.phase;
-  }
-
-  getVal()
-  {
-    return this.val;
-  }
+  return rgb;
 }
 
 class Canvas 
 {
   constructor()
   {
-    this.bubbleWidth = 0;
-    this.h = 0;
-    this.s = 100;
-    this.v = 100;
+    this.a = INIT_A;
+    this.b = INIT_B;
+    this.c = INIT_C; 
+    this.d = INIT_D;
+    this.numGens = INIT_NUMGENS;
+    this.setBoxInput();
+  }
 
-    this.sLowerLimit = 60;
-    this.sUpperLimit = 80;
-    this.sVariable = this.sUpperLimit - this.sLowerLimit;
+  getBoxInput()
+  {
+    var rgb = ['r', 'g', 'b'];
+    for (var i = 0; i < rgb.length; i++)
+    {
+      var a = document.getElementById("a" + rgb[i] + "box").value;
+      var b = document.getElementById("b" + rgb[i] + "box").value;
+      var c = document.getElementById("c" + rgb[i] + "box").value;
+      var d = document.getElementById("d" + rgb[i] + "box").value;
+      try
+      {
+        this.a[i] = float(a);
+        this.b[i] = float(b);
+        this.c[i] = float(c);
+        this.d[i] = float(d);
+      }
+      catch(e)
+      {
+        console.log("ONE OR MORE INPUT(S) NOT A NUMBER!\n");
+      }
+    }
 
-    this.sizeChangeRate = 0.0028;
+    try
+    {
+      this.numGens = document.getElementById("numGens").value;
+    }
+    catch(e)
+    {
+      console.log("T0,1 or NUMGENS INPUT ERROR\n");
+    }
 
-    this.oscW = new Oscillator(this.sizeChangeRate);
-    this.oscH = new Oscillator(0.00015, 0.15);
-    this.oscS = new Oscillator(0.0005);
-    this.oscX = new Oscillator(0);
-    this.oscY = new Oscillator(this.sizeChangeRate);
+    console.log("a", this.a, "b", this.b, "c", this.c, "d", this.d);
+    console.log("numGens", this.numGens);
+    this.generateColors();
+    this.setBoxInput();
+  }
 
-    this.lastTimestamp = 0;
+  setBoxInput()
+  {
+    var rgb = ['r', 'g', 'b'];
+    for (var i = 0; i < rgb.length; i++)
+    {
+      document.getElementById("a" + rgb[i] + "box").value = this.a[i];
+      document.getElementById("b" + rgb[i] + "box").value = this.b[i];
+      document.getElementById("c" + rgb[i] + "box").value = this.c[i];
+      document.getElementById("d" + rgb[i] + "box").value = this.d[i];
+    }
+    document.getElementById("numGens").value = this.numGens;
+  }
 
-    this.blackingOut = false;
-    this.halfPeriodsTilBlackingOut = DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT;
-    this.numHalfPeriods = 0;
-    this.numBlackoutBeats = 0;
-
-    this.bubbleHDifference = 0;
-
-    this.xoffset = Math.abs((WINDOW_WIDTH / 2) - (500 - X_CLOSENESS_MODIFIER));
-    this.yoffset = Math.abs((WINDOW_HEIGHT / 2) - (520 + Y_CLOSENESS_MODIFIER));
-
-    this.maxTopDistance = 0;
-    this.maxBotDistance = 0;
-
-    this.paused = true;
-
-    this.frameId = 0;
-
-    this.numBlackouts = 0;
+  generateColors()
+  {
+    var rectLen = WINDOW_WIDTH / this.numGens;
+    var tInterval = float(1 / this.numGens);
+    for (var i = 0; i < this.numGens; i++)
+    {
+      var x = i * rectLen;
+      var t = float(i * tInterval);
+      var color = IqPalette(t, this.a, this.b, this.c, this.d);
+      strokeWeight(STROKE_WEIGHT);
+      fill(color[0] * R_MAX, color[1] * G_MAX, color[2] * B_MAX);
+      rect(x, 0, rectLen, 400);
+    }
   }
 
   updateCanvas()
   {
-    if (DEBUG_PAUSING && this.paused)
-    {
-      return;
-    }
-
-    this.oscW.update();
-    this.oscH.update();
-    this.oscS.update();
-    this.oscX.update();
-    this.oscY.update();
- 
-    this.h = Math.abs(this.oscH.getVal()) * H_MAX;
-    this.s = (this.oscS.getVal() * this.sVariable) + this.sLowerLimit;
-
-    this.bubbleWidth = this.oscW.getVal() * 300;
-    if (this.blackingOut)
-    {
-      if (this.oscY.getVal() < 0)
-      {
-        this.bubbleWidth -= 3;
-      }
-      else
-      {
-        this.bubbleWidth += 3;
-      }
-    }
   }
 
   drawCanvas()
   {
-    this.x = (WINDOW_WIDTH / 2) + (this.oscX.getVal() * 300);
-    this.y = (WINDOW_HEIGHT / 2) + (this.oscY.getVal() * 300);
-    if (this.oscY.getVal() > 0)
-    {
-      this.x = this.x - (200 - 2*X_CLOSENESS_MODIFIER);
-      this.y = this.y - (240 + 2*Y_CLOSENESS_MODIFIER);
-    }
-    
-    if (this.blackingOut)
-    {
-      this.v = 0;
-    }
-    else
-    {
-      this.v = V_MAX;
-    }
 
-    noStroke();
-    
-    if (this.oscW.getVal() < 0 && this.bubbleHDifference > 0)
-    {
-      this.h += this.bubbleHDifference;
-      this.h = this.h % H_MAX;
-    }
-    fill(this.h, this.s, this.v);
-    ellipse(this.x + this.xoffset, this.y + this.yoffset, this.bubbleWidth, this.bubbleWidth);
-  
-    var beat = (this.oscW.goingUp != this.oscW.prevGoingUp);
-    if (beat)
-    {
-      console.log("BEAT 1.");
-      var d = new Date();
-      var thisTimestamp = d.getTime();
-      if (this.lastTimestamp != 0)
-      {
-        if (this.blackingOut)
-        {
-          this.oscW.phase = 1;
-          this.oscY.phase = 1;
-          this.numBlackoutBeats++;
-        }
-        if (this.numBlackoutBeats == 2)
-        {
-          this.numBlackoutBeats = 0;
-          this.blackingOut = false;
-          console.log("BLACKING OUT DONE");
-          this.oscW.phase = 0;
-          this.oscY.phase = 0;
-          this.numHalfPeriods = 0;
-          this.numBlackouts++;
-        }
-      }
-      this.lastTimestamp = thisTimestamp;
-    }
-
-    if (Math.abs(this.oscW.getVal()) < 0.005)
-    {
-      this.numHalfPeriods++;
-      console.log("BEAT 0. NUM HALF PERIODS", this.numHalfPeriods);
-    }
-
-    if (this.numHalfPeriods > 0 && (this.numHalfPeriods % this.halfPeriodsTilBlackingOut) == 0 && !this.blackingOut && BLACKOUTS_ENABLED)
-    {
-      console.log("BLACKING OUT");
-      this.blackingOut = true;
-    }
-
-    if (this.numHalfPeriods > 0 && (this.numHalfPeriods % (this.halfPeriodsTilBlackingOut + 2)) == 0 && this.blackingOut)
-    {
-      console.log("BLACKING OUT DONE");
-      this.blackingOut = false;
-      this.numHalfPeriods = 0;
-    }
-
-    // INFO WE USE FOR DEBUGGING
-    var topDist = int(this.y + this.yoffset);
-    this.maxTopDistance = (topDist > this.maxTopDistance ? topDist : this.maxTopDistance);
-
-    var botDist = int(WINDOW_HEIGHT - (this.y + this.yoffset));
-    this.maxBotDistance = (botDist > this.maxBotDistance ? botDist : this.maxBotDistance);
-
-    if (SAVE_FRAMES && this.numBlackouts < SAVE_FRAMES_BLACKOUT_THRESHOLD)
-    {
-      this.saveFrame();
-    }
-    
-    this.frameId++;
-  }
-
-  drawDebugPanel()
-  {
-    if (DEBUG_FPS)
-    {
-      fill(0, 0, 100);
-      rect(0, WINDOW_HEIGHT - 20, 20, 20);
-      fill(0, 0, 0);
-      text(str(fps), 0, WINDOW_HEIGHT - 5);
-    }
-
-    if (DEBUG_LINES)
-    {
-      background(0, 0, 0);
-      stroke(0, 0, 100);
-      strokeWeight(1);
-      line(this.x + this.xoffset, 0, this.x + this.xoffset, WINDOW_HEIGHT);
-      //line(0, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
-      fill(0, 0, 100);
-      rect(0, WINDOW_HEIGHT - 40, 120, 20);
-      fill(0, 0, 0);
-      text("x:" + str(this.x + this.xoffset) + " y:" + str(int(this.y+this.yoffset)), 0, WINDOW_HEIGHT - 25);
-
-      // CENTER POINT
-      strokeWeight(10);
-      point(this.x + this.xoffset, this.y+this.yoffset); // center point
-
-      // TOP LINE
-      strokeWeight(1);
-      line(this.x + this.xoffset - 30, this.y + this.yoffset - 5, this.x + this.xoffset - 30, 0);
-
-      // BOTTOM LINE
-      strokeWeight(1);
-      line(this.x + this.xoffset - 30, this.y + this.yoffset + 5, this.x + this.xoffset - 30, WINDOW_HEIGHT);
-
-      // TOP LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text("len:" + str(int(this.y + this.yoffset)) + "\nmax:" + str(this.maxTopDistance), this.x + this.xoffset - 130, (this.y + this.yoffset)/2);
-
-      // BOTTOM LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text("len:" + str(int(WINDOW_HEIGHT - this.y - this.yoffset)) + "\nmax:" + str(this.maxBotDistance), this.x + this.xoffset - 130, (this.y + this.yoffset) + ((this.y + this.yoffset)/2));
-
-      // ELLIPSE TOP POINT
-      strokeWeight(10);
-      point(this.x+this.xoffset, this.y+this.yoffset-this.bubbleWidth/2);
-
-      // ELLIPSE BOTTOM POINT
-      strokeWeight(10);
-      point(this.x+this.xoffset, this.y+this.yoffset+this.bubbleWidth/2); 
-
-      // LEFT LINE
-      strokeWeight(1);
-      line(0, this.y + this.yoffset, this.x + this.xoffset, this.y + this.yoffset);
-
-      // RIGHT LINE
-      strokeWeight(1);
-      line(this.x + this.xoffset, this.y + this.yoffset, WINDOW_WIDTH, this.y + this.yoffset);
-
-      // LEFT LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text(str("len:" + str(this.x + this.xoffset)), (this.x + this.xoffset) / 2, this.y + this.yoffset);
-
-      // RIGHT LINE INFO TEXT
-      fill(0, 0, 100);
-      textSize(20);
-      text(str("len:" + str(WINDOW_WIDTH - this.x - this.xoffset)), this.x + this.xoffset + ((WINDOW_WIDTH - this.x - this.xoffset) / 2) , this.y + this.yoffset);
-
-      // X Y OFFSET TEXTS
-      fill(0, 0, 100);
-      rect(0, WINDOW_HEIGHT - 100, 80, 50);
-      fill(0, 0, 0);
-      text("xoff:" + str(this.xoffset) + "\nyoff:" + str(this.yoffset), 0, WINDOW_HEIGHT - 85);
-    }
   }
 
   saveFrame()
   {
-    var filename = "bubbles-" + str(this.frameId).padStart(5, "0");
+    var filename = "iq-" + str(this.frameId).padStart(5, "0");
     saveCanvas(p5jsCanvas, filename, "jpg");
   }
 }
 
 ////////////////////////
+
+function randRange(min, max)
+{
+  return float(Math.random() * (max - min) + min);
+}
+
+function randomizeButtonPressed()
+{
+  var rgb = ['r', 'g', 'b'];
+  for (var i = 0; i < rgb.length; i++)
+  {
+    document.getElementById("a" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
+    document.getElementById("b" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
+    document.getElementById("c" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
+    document.getElementById("d" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
+  }
+  myCanvas.getBoxInput();
+}
+
+function refreshButtonPressed()
+{
+  myCanvas.getBoxInput();
+}
 
 function mouseMoved()
 {
@@ -353,25 +191,11 @@ function mouseWheel()
 function keyPressed()
 {
   console.log("KEY PRESSED", key);
-  if (key == ' ')
-  {
-    myCanvas.paused = false;
-  }
 }
 
 function keyReleased()
 {
   console.log("KEY RELEASED", key);
-  if (key == ' ')
-  {
-    myCanvas.paused = true;
-  }
-  if (key == 'd' && TOGGLE_DEBUG_ALLOWED)
-  {
-    background(0, 0, 0);
-    DEBUG_LINES = !DEBUG_LINES;
-    DEBUG_FPS = !DEBUG_FPS;
-  }
 }
 
 
@@ -382,7 +206,7 @@ p5jsCanvas = undefined;
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
-  colorMode(HSB, H_MAX, S_MAX, V_MAX);
+  colorMode(RGB, R_MAX, G_MAX, B_MAX);
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
@@ -407,5 +231,4 @@ function draw()
   lastFrameTs = frameTs;
   myCanvas.updateCanvas();
   myCanvas.drawCanvas();
-  myCanvas.drawDebugPanel();
 }
