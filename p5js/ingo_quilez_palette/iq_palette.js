@@ -36,6 +36,7 @@ const KNOWN_NICE_PALETTES = [
   ["Warm pastelle green to pink", [0.814,1.880,0.768],[0.316,1.429,0.200],[0.479,0.055,0.532],[1.539,0.365,0.740]], 
   ["Dark green to beige", [0.698,1.439,0.082],[1.572,1.053,0.903],[0.466,0.259,0.205],[0.561,0.571,1.790]],
   ["Neat solarized", [0.142, 0.703, 0.359], [1.173, 0.335, 0.665], [1.217, 1.716, 1.690], [1.594, 1.135, 1.031]],
+  ["Neat bit less solarized", [0.142,0.703,0.359],[1.173,0.335,0.665],[1.217,1.716,1.690],[1.594,1.000,1.031]],
 ];
 
 var RAND_MAX = 2.0;
@@ -96,7 +97,7 @@ class Canvas
     }
     catch(e)
     {
-      console.log("T0,1 or NUMGENS INPUT ERROR\n");
+      console.log("NUMGENS INPUT ERROR\n");
     }
 
     this.generateColors();
@@ -153,7 +154,7 @@ class Canvas
     for (var i = 0; i < KNOWN_NICE_PALETTES.length; i++)
     {
       var opt = document.createElement('option');
-      var p = KNOWN_NICE_PALETTES[i][0];
+      var p = KNOWN_NICE_PALETTES[i][0].slice();
       opt.value = i;
       opt.innerHTML = p;
       select.appendChild(opt);
@@ -231,7 +232,7 @@ function setPalettePressed()
     return;
   }
   var idx = int(selectedIdx);
-  var tmp = KNOWN_NICE_PALETTES[idx];
+  var tmp = KNOWN_NICE_PALETTES[idx].slice();
   myCanvas.setPalette(tmp[1], tmp[2], tmp[3], tmp[4]);
 }
 
