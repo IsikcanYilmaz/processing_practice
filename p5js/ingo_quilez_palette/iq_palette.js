@@ -19,9 +19,7 @@ var INIT_A = [0.5,0.5,0.5];
 var INIT_B = [0.5,0.5,0.5];
 var INIT_C = [1.0,1.0,1.0];
 var INIT_D = [0.0,0.33,0.67];
-var INIT_T0 = 0
-var INIT_T1 = 10
-var INIT_NUMGENS = 10
+var INIT_NUMGENS = 50
 var INIT_COLORS = 4;
 
 const KNOWN_NICE_PALETTES = [
