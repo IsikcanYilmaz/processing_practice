@@ -16,7 +16,10 @@ p {
     <main>
     </main>
   </body>
-  a__________b____________c__________d
+  <div style="float: left;">
+  <p>
+  a__________b__________c__________d
+  </p>
   <p>
      <input type="text" size=3 id="arbox"></input>
      <input type="text" size=3 id="brbox"></input>
@@ -45,5 +48,18 @@ p {
     <input type="button" value="REFRESH" id="ref" onclick=refreshButtonPressed()></input>
     <input type="button" value="RANDOMIZE" id="ref" onclick=randomizeButtonPressed()></input>
   </p>
+  <p id="printedPalette" style="width: 100px;">-</p>
+  </div>
+  <div>
+  </div>
+  <div style="float: left;">
+  <p>
+  Predefined Palettes:
+  </p>
+  <select id="predefinedPalettes">
+    <option value="NA"> - </option>
+  </select>
+  <input type="button" value="SET PALETTE" onclick=setPalettePressed()></input>
+  </div>
     <script src="iq_palette.js"></script>
 </html>

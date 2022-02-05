@@ -24,14 +24,19 @@ var INIT_T1 = 10
 var INIT_NUMGENS = 10
 var INIT_COLORS = 4;
 
-var KNOWN_NICE_PALETTES = [
-  [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [1.0, 1.0, 1.0], [0.30, 0.20, 0.20]], // Blue, metallic
-  [[1.938, 0.105, 1.812], [1.200, 1.057, 1.122], [0.523, 0.189, 0.293], [0.770, 0.073, 1.340]], // Pinkish
-  [[0.461, 1.645, 0.949], [1.930, 1.162, 0.709], [0.054, 0.412, 0.109], [0.823, 1.519, 1.271]], // Pink lemonade
-  [[0.995, 1.109, 0.868], [1.376, 1.029, 0.368], [1.585, 0.151, 1.083], [1.580, 1.648, 0.244]], // Warm blue and orange to white
-  [[0.192, 1.469, 0.886], [1.442, 0.921, 0.357], [0.206, 0.677, 1.119], [1.827, 0.234, 1.036]], // Pastel, lowsat blue, pink, orange, tan
-  [[1.839, 0.318, 0.253], [1.145, 0.510, 0.254], [0.855, 1.199, 1.221], [1.797, 0.306, 0.992]], // Neat fiery and purp
-  [[0.292, 0.838, 0.913], [0.706, 0.636, 0.885], [1.223, 0.641, 1.926], [1.576, 0.934, 0.874]], // Nice blues and some yeller
+const KNOWN_NICE_PALETTES = [
+  ["Blue metallic", [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [1.0, 1.0, 1.0], [0.30, 0.20, 0.20]],
+  ["Pinkish", [1.938, 0.105, 1.812], [1.200, 1.057, 1.122], [0.523, 0.189, 0.293], [0.770, 0.073, 1.340]],
+  ["Pink lemonade", [0.461, 1.645, 0.949], [1.930, 1.162, 0.709], [0.054, 0.412, 0.109], [0.823, 1.519, 1.271]],
+  ["Warm blue and orange to white", [0.995, 1.109, 0.868], [1.376, 1.029, 0.368], [1.585, 0.151, 1.083], [1.580, 1.648, 0.244]],
+  ["Pastel, lowsat blue, pink, orange, tan", [0.192, 1.469, 0.886], [1.442, 0.921, 0.357], [0.206, 0.677, 1.119], [1.827, 0.234, 1.036]],
+  ["Neat fiery and purp", [1.839, 0.318, 0.253], [1.145, 0.510, 0.254], [0.855, 1.199, 1.221], [1.797, 0.306, 0.992]], 
+  ["Nice blues and some yeller", [0.292, 0.838, 0.913], [0.706, 0.636, 0.885], [1.223, 0.641, 1.926], [1.576, 0.934, 0.874]],
+  ["Warm orange, blue, green", [0.735,0.051,0.382],[0.552,0.755,0.518],[1.387,0.014,0.896],[0.973,1.948,0.529]], 
+  ["Blue and purp", [0.373,0.330,1.430],[0.489,0.226,0.753],[1.651,1.445,1.887],[0.894,0.531,0.240]],
+  ["Dark blue and green", [0.978,0.700,0.795],[0.595,0.480,0.282],[0.241,0.632,0.592],[0.338,0.237,1.949]], 
+  ["Warm pastelle green to pink", [0.814,1.880,0.768],[0.316,1.429,0.200],[0.479,0.055,0.532],[1.539,0.365,0.740]], 
+  ["Dark green to beige", [[0.698,1.439,0.082],[1.572,1.053,0.903],[0.466,0.259,0.205],[0.561,0.571,1.790]]],
 ];
 
 var RAND_MAX = 2.0;
@@ -51,17 +56,6 @@ if (SAVE_FRAMES)
 }
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
-// t runs from 0 to 1. a, b, c, d are rgb vectors
-function IqPalette(t, a, b, c, d)
-{
-  var rgb = [0, 0, 0];
-  for (var i = 0; i < rgb.length; i++)
-  {
-    rgb[i] = a[i] + b[i] * Math.cos(2 * PI * (c[i] * t + d[i]));
-  }
-  return rgb;
-}
-
 class Canvas 
 {
   constructor()
@@ -72,6 +66,7 @@ class Canvas
     this.d = INIT_D;
     this.numGens = INIT_NUMGENS;
     this.setBoxInput();
+    this.populatePredefinedPalettes();
   }
 
   getBoxInput()
@@ -105,10 +100,9 @@ class Canvas
       console.log("T0,1 or NUMGENS INPUT ERROR\n");
     }
 
-    console.log("a", this.a, "b", this.b, "c", this.c, "d", this.d);
-    console.log("numGens", this.numGens);
     this.generateColors();
     this.setBoxInput();
+    this.printPalette();
   }
 
   setBoxInput()
@@ -139,6 +133,45 @@ class Canvas
     }
   }
 
+  printPalette()
+  {
+    var toprint = [this.a, this.b, this.c, this.d];
+    var st = "["
+    for(var i = 0; i < toprint.length; i++)
+    {
+      st += "[" + str(toprint[i][0].toFixed(3)) + "," + str(toprint[i][1].toFixed(3)) + "," + str(toprint[i][2].toFixed(3)) + "]";
+      if (i < toprint.length - 1)
+        st += ","
+    }
+    st += "]";
+    console.log(st);
+    document.getElementById("printedPalette").innerHTML = st;
+  }
+
+  populatePredefinedPalettes()
+  {
+    var select = document.getElementById("predefinedPalettes");
+    for (var i = 0; i < KNOWN_NICE_PALETTES.length; i++)
+    {
+      var opt = document.createElement('option');
+      var p = KNOWN_NICE_PALETTES[i][0];
+      opt.value = i;
+      opt.innerHTML = p;
+      select.appendChild(opt);
+    }
+  }
+
+  setPalette(a, b, c, d)
+  {
+    this.a = a;
+    this.b = b;
+    this.c = c;
+    this.d = d;
+    this.setBoxInput();
+    this.generateColors();
+    this.printPalette();
+  }
+
   updateCanvas()
   {
   }
@@ -157,6 +190,17 @@ class Canvas
 
 ////////////////////////
 
+// t runs from 0 to 1. a, b, c, d are rgb vectors
+function IqPalette(t, a, b, c, d)
+{
+  var rgb = [0, 0, 0];
+  for (var i = 0; i < rgb.length; i++)
+  {
+    rgb[i] = a[i] + b[i] * Math.cos(2 * PI * (c[i] * t + d[i]));
+  }
+  return rgb;
+}
+
 function randRange(min, max)
 {
   return float(Math.random() * (max - min) + min);
@@ -167,10 +211,10 @@ function randomizeButtonPressed()
   var rgb = ['r', 'g', 'b'];
   for (var i = 0; i < rgb.length; i++)
   {
-    document.getElementById("a" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
-    document.getElementById("b" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
-    document.getElementById("c" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
-    document.getElementById("d" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX);
+    document.getElementById("a" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX).toFixed(3);
+    document.getElementById("b" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX).toFixed(3);
+    document.getElementById("c" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX).toFixed(3);
+    document.getElementById("d" + rgb[i] + "box").value = randRange(RAND_MIN, RAND_MAX).toFixed(3);
   }
   myCanvas.getBoxInput();
 }
@@ -178,6 +222,18 @@ function randomizeButtonPressed()
 function refreshButtonPressed()
 {
   myCanvas.getBoxInput();
+}
+
+function setPalettePressed()
+{
+  var selectedIdx = document.getElementById("predefinedPalettes").value;
+  if (selectedIdx == "NA")
+  {
+    return;
+  }
+  var idx = int(selectedIdx);
+  var tmp = KNOWN_NICE_PALETTES[idx];
+  myCanvas.setPalette(tmp[1], tmp[2], tmp[3], tmp[4]);
 }
 
 function mouseMoved()
