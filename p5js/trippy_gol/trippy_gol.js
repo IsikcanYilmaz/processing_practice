@@ -1,6 +1,9 @@
 var H_MAX = 360;
 var S_MAX = 100;
 var V_MAX = 100;
+var R_MAX = 255;
+var G_MAX = 255;
+var B_MAX = 255;
 
 var DEFAULT_BACKGROUND = [0, 0, 0];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
@@ -12,8 +15,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 400;
+var WINDOW_WIDTH  = 400;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -36,17 +39,18 @@ var DRAW_CIRCLE_GRANULARITY = 360;
 var DRAW_CIRCLE_RAND_MAX = 200;
 var DRAW_CIRCLE_RAND_MIN = 20;
 
+var COLORED = true;
+var IQ_COLOR_SCHEME = true; 
+var STROKE_WEIGHT = 0;
+
 var H_DEFAULT = 0;
-var S_DEFAULT = 100;
+var S_DEFAULT = IQ_COLOR_SCHEME ? 0 : 100;
 var V_DEFAULT = 100;
 
 var H_DELTA = 2;
 var H_DECAY = 0;
 var S_DECAY = 0.25;
 var V_DECAY = 0;
-
-var COLORED = false;
-var STROKE_WEIGHT = 0;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var UPDATE_PER_SECOND_MAX = 30;
@@ -276,11 +280,21 @@ class GoLBoard
     }
     this.currentFrame = this.nextFrame;
     this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
-
-    var newh = (this.color[0] + H_DELTA) % H_MAX;
-    var news = this.color[1];
-    var newv = this.color[2];
-    this.color = [newh, news, newv];
+  
+    if (IQ_COLOR_SCHEME)
+    {
+      var newh = (this.color[0] + H_DELTA) % H_MAX;
+      var news = this.color[1];
+      var newv = this.color[2];
+      this.color = [0, 0, 100];
+    }
+    else
+    {
+      var newh = (this.color[0] + H_DELTA) % H_MAX;
+      var news = this.color[1];
+      var newv = this.color[2];
+      this.color = [newh, news, newv];
+    }
   }
 
   drawBoard()
@@ -507,6 +521,7 @@ function setup()
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
   colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
+  initColorGen(H_MAX, S_MAX, V_MAX, R_MAX, G_MAX, B_MAX);
   textSize(12);
   smooth(8);
   myCanvas = new Canvas();
