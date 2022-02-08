@@ -67,6 +67,7 @@ class Canvas
     this.numGens = INIT_NUMGENS;
     this.setBoxInput();
     this.populatePredefinedPalettes();
+    this.colors = new Array(this.numGens).fill([0, 0, 0]);
   }
 
   getBoxInput()
@@ -127,6 +128,7 @@ class Canvas
       var x = i * rectLen;
       var t = float(i * tInterval);
       var color = IqPalette(t, this.a, this.b, this.c, this.d);
+      this.colors[i] = [color[0] * R_MAX, color[1] * G_MAX, color[2] * B_MAX];
       strokeWeight(STROKE_WEIGHT);
       fill(color[0] * R_MAX, color[1] * G_MAX, color[2] * B_MAX);
       rect(x, 0, rectLen, 400);
@@ -238,6 +240,12 @@ function setPalettePressed()
 
 function mouseMoved()
 {
+  if (mouseX >= 0 && mouseX < WINDOW_WIDTH && mouseY >= 0 && mouseY < WINDOW_HEIGHT)
+  {
+    var idx = Math.floor(mouseX/(WINDOW_WIDTH / myCanvas.numGens));
+    var st = String(myCanvas.colors[idx]);
+    document.getElementById("rgbVals").innerHTML = st;
+  }
 }
 
 function mouseWheel()
