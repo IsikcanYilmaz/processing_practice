@@ -41,6 +41,10 @@ var DRAW_CIRCLE_RAND_MIN = 20;
 
 var COLORED = true;
 var IQ_COLOR_SCHEME = true; 
+
+var DEFAULT_IQ_NUMGENS = 500;
+var DEFAULT_IQ_COLOR_PALETTE = 6;//13;
+
 var STROKE_WEIGHT = 0;
 
 var H_DEFAULT = 0;
@@ -93,6 +97,47 @@ class GoLCell
   }
 }
 
+class GoLColorGen
+{
+  constructor(numGens)
+  {
+    this.t = 0;
+    this.colorIdx = 0;
+    this.numGens = numGens;
+    this.dt = 1/numGens;
+    this.setColorPalette(DEFAULT_IQ_COLOR_PALETTE);
+  }
+
+  setColorPalette(i)
+  {
+    this.paletteIdx = i;
+    this.palette = [KNOWN_NICE_PALETTES[i][1], KNOWN_NICE_PALETTES[i][2], KNOWN_NICE_PALETTES[i][3], KNOWN_NICE_PALETTES[i][4]];
+    this.hsvPalette = [];
+    for (var i = 0; i < this.numGens; i++)
+    {
+      var rgb = IqPalette(i * (this.dt), this.palette[0], this.palette[1], this.palette[2], this.palette[3]);
+      var hsv = rgbToHsv([rgb[0] * 255, rgb[1] * 255, rgb[1] * 255]);
+      this.hsvPalette.push(hsv);
+    }
+  }
+
+  update()
+  {
+    this.t = (this.t + this.dt) % 1;
+    this.colorIdx = (this.colorIdx + 1) % this.numGens;
+  }
+
+  getCurrColor()
+  {
+    return this.hsvPalette[this.colorIdx];
+  }
+
+  getColor(i)
+  {
+    return this.hsvPalette[i % this.numGens];
+  }
+}
+
 class GoLBoard
 {
   constructor()
@@ -105,6 +150,7 @@ class GoLBoard
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
+    this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
   }
 
   setFrameFrequency(hz)
@@ -283,10 +329,9 @@ class GoLBoard
   
     if (IQ_COLOR_SCHEME)
     {
-      var newh = (this.color[0] + H_DELTA) % H_MAX;
-      var news = this.color[1];
-      var newv = this.color[2];
-      this.color = [0, 0, 100];
+      this.golColorGen.update();
+      this.color = this.golColorGen.getCurrColor();
+      console.log(this.color);
     }
     else
     {
@@ -521,7 +566,6 @@ function setup()
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
   colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
-  initColorGen(H_MAX, S_MAX, V_MAX, R_MAX, G_MAX, B_MAX);
   textSize(12);
   smooth(8);
   myCanvas = new Canvas();
