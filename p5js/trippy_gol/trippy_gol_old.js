@@ -1,9 +1,9 @@
 var H_MAX = 360;
 var S_MAX = 100;
 var V_MAX = 100;
-var R_MAX = 100;
-var G_MAX = 100;
-var B_MAX = 100;
+var R_MAX = 255;
+var G_MAX = 255;
+var B_MAX = 255;
 
 var DEFAULT_BACKGROUND = [0, 0, 0];
 var DEFAULT_STROKE_COLOR = [250, 0, 100];
@@ -15,8 +15,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 400;
+var WINDOW_WIDTH  = 400;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -41,10 +41,6 @@ var DRAW_CIRCLE_RAND_MIN = 20;
 
 var COLORED = true;
 var IQ_COLOR_SCHEME = true; 
-
-var DEFAULT_IQ_NUMGENS = 500;
-var DEFAULT_IQ_COLOR_PALETTE = 10;//13;
-
 var STROKE_WEIGHT = 0;
 
 var H_DEFAULT = 0;
@@ -53,8 +49,8 @@ var V_DEFAULT = 100;
 
 var H_DELTA = 2;
 var H_DECAY = 0;
-var S_DECAY = 1; //0.25;
-var V_DECAY = 0.0;
+var S_DECAY = 0.25;
+var V_DECAY = 0;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var UPDATE_PER_SECOND_MAX = 30;
@@ -78,9 +74,6 @@ var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_FPS = false;
 var DEBUG_PAUSING = false;
-var DEBUG_PALETTE = false;
-
-var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 ////////////////////////
 
@@ -100,84 +93,6 @@ class GoLCell
   }
 }
 
-class GoLColorGen
-{
-  constructor(numGens)
-  {
-    this.t = 0;
-    this.colorIdx = 0;
-    this.numGens = numGens;
-    this.dt = 1/numGens;
-    this.setColorPalette(DEFAULT_IQ_COLOR_PALETTE);
-  }
-
-  setColorPalette(i)
-  {
-    console.log("Using Palette idx:", i, KNOWN_NICE_PALETTES[i]);
-    this.paletteIdx = i;
-    this.palette = [KNOWN_NICE_PALETTES[i][1], KNOWN_NICE_PALETTES[i][2], KNOWN_NICE_PALETTES[i][3], KNOWN_NICE_PALETTES[i][4]];
-    this.hsvPalette = [];
-    this.rgbPalette = [];
-    for (var i = 0; i < this.numGens; i++)
-    {
-      var rgb = IqPalette(i * (this.dt), this.palette[0], this.palette[1], this.palette[2], this.palette[3]);
-      this.rgbPalette.push([rgb[0] * R_MAX, rgb[1] * G_MAX, rgb[2] * B_MAX]);
-      var hsv = rgbToHsv([rgb[0] * R_MAX, rgb[1] * G_MAX, rgb[2] * B_MAX]);
-      this.hsvPalette.push(hsv);
-    }
-  }
-
-  update()
-  {
-    this.t = (this.t + this.dt) % 1;
-    this.colorIdx = (this.colorIdx + 1) % this.numGens;
-  }
-
-  getCurrColor()
-  {
-    return this.hsvPalette[this.colorIdx];
-  }
-
-  getCurrHsvColor()
-  {
-    return this.hsvPalette[this.colorIdx];
-  }
-
-  getCurrRgbColor()
-  {
-    return this.rgbPalette[this.colorIdx];
-  }
-
-  getColor(i)
-  {
-    return this.hsvPalette[i % this.numGens];
-  }
-
-  getColorPalette()
-  {
-    return this.paletteIdx;
-  }
-
-  drawDebugPalette()
-  {
-    var rectW = WINDOW_WIDTH/this.numGens;
-    var rectH = DEBUG_PALETTE_HEIGHT/2;
-    for (var i = 0; i < this.numGens; i++)
-    {
-      var x = i * rectW;
-      var y = WINDOW_HEIGHT - rectH;
-      var hsvc = this.hsvPalette[i];
-      var rgbc = this.rgbPalette[i];
-      colorMode(RGB, R_MAX, G_MAX, B_MAX);
-      fill(rgbc[0], rgbc[1], rgbc[2]);
-      rect(x, y - rectH, rectW, rectH);
-      colorMode(HSB, H_MAX, S_MAX, V_MAX);
-      fill(hsvc[0], hsvc[1], hsvc[2]);
-      rect(x, y, rectW, rectH);
-    }
-  }
-}
-
 class GoLBoard
 {
   constructor()
@@ -190,7 +105,6 @@ class GoLBoard
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
-    this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
   }
 
   setFrameFrequency(hz)
@@ -369,8 +283,10 @@ class GoLBoard
   
     if (IQ_COLOR_SCHEME)
     {
-      this.golColorGen.update();
-      this.color = this.golColorGen.getCurrHsvColor();
+      var newh = (this.color[0] + H_DELTA) % H_MAX;
+      var news = this.color[1];
+      var newv = this.color[2];
+      this.color = [0, 0, 100];
     }
     else
     {
@@ -441,10 +357,6 @@ class Canvas
   drawCanvas()
   {
     this.board.drawBoard();
-    if (DEBUG_PALETTE)
-    {
-      this.board.golColorGen.drawDebugPalette();
-    }
   }
 
   drawDebugPanel()
@@ -554,19 +466,6 @@ function keyPressedGeneric(k)
     var r = createVector(centerDiffX, centerDiffY).mag();
     myCanvas.drawCircle(centerx, centery, r);
   }
-  if (key == 'p')
-  {
-    myCanvas.board.golColorGen.setColorPalette((myCanvas.board.golColorGen.getColorPalette() + 1) % KNOWN_NICE_PALETTES.length);
-  }
-  if (key == 'o')
-  {
-    COLORED = !COLORED;
-    console.log("COLORED:", COLORED);
-  }
-  if (key == 'd')
-  {
-    DEBUG_PALETTE = !DEBUG_PALETTE;
-  }
 }
 
 function mouseClicked()
@@ -594,6 +493,22 @@ function keyPressed()
 
 function keyReleased()
 {
+  console.log("KEY RELEASED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = true;
+  }
+  if (key == 'd' && TOGGLE_DEBUG_ALLOWED)
+  {
+    background(0, 0, 0);
+    DEBUG_LINES = !DEBUG_LINES;
+    DEBUG_FPS = !DEBUG_FPS;
+  }
+  if (key == 'o')
+  {
+    COLORED = !COLORED;
+    console.log("COLORED:", COLORED);
+  }
 }
 
 
@@ -606,6 +521,7 @@ function setup()
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
   colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
+  initColorGen(H_MAX, S_MAX, V_MAX, R_MAX, G_MAX, B_MAX);
   textSize(12);
   smooth(8);
   myCanvas = new Canvas();
