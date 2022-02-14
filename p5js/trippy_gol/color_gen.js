@@ -85,12 +85,13 @@ function rgbToHsv(rgb)
   return [h * CG_HMAX, s * CG_SMAX, v * CG_VMAX];
 }
 
+// Takes h,s,v in h=0-360, s=0-100, v=0-100 (the maxs are defined in CG_xMAX variables
 function hsvToRgb(hsv)
 {
   var r, g, b, i, f, p, q, t;
-  if (arguments.length === 1) {
-    s = h.s, v = h.v, h = h.h;
-  }
+  var h = hsv[0]/CG_HMAX;
+  var s = hsv[1]/CG_SMAX;
+  var v = hsv[2]/CG_VMAX;
   i = Math.floor(h * 6);
   f = h * 6 - i;
   p = v * (1 - s);
@@ -106,3 +107,4 @@ function hsvToRgb(hsv)
   }
   return [r * CG_RMAX, g * CG_GMAX, b * CG_BMAX];
 }
+

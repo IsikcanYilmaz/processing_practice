@@ -15,8 +15,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 400;
+var WINDOW_WIDTH  = 400;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -41,26 +41,20 @@ var DRAW_CIRCLE_RAND_MIN = 20;
 
 var COLORED = true;
 var IQ_COLOR_SCHEME = true; 
-var COLOR_MODE_RGB = true;
 
-var DEFAULT_IQ_NUMGENS = 50;
+var DEFAULT_IQ_NUMGENS = 500;
 var DEFAULT_IQ_COLOR_PALETTE = 10;//13;
-var IQ_REVERSE_SPECTRUM = true;
 
 var STROKE_WEIGHT = 0;
 
 var H_DEFAULT = 0;
 var S_DEFAULT = IQ_COLOR_SCHEME ? 0 : 100;
-var V_DEFAULT = 0;
-
-var H_ALIVE = 0;
-var S_ALIVE = 0;
-var V_ALIVE = 100;
+var V_DEFAULT = 100;
 
 var H_DELTA = 2;
-var H_DECAY = 0;
-var S_DECAY = 0.0; //0.25;
-var V_DECAY = 1;
+var H_DECAY = 1;
+var S_DECAY = 0.5; //0.25;
+var V_DECAY = 0.0;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var UPDATE_PER_SECOND_MAX = 30;
@@ -112,7 +106,7 @@ class GoLColorGen
   {
     this.t = 0;
     this.colorIdx = 0;
-    this.numGens = (IQ_REVERSE_SPECTRUM) ? numGens * 2 : numGens;
+    this.numGens = numGens;
     this.dt = 1/numGens;
     this.setColorPalette(DEFAULT_IQ_COLOR_PALETTE);
   }
@@ -124,22 +118,12 @@ class GoLColorGen
     this.palette = [KNOWN_NICE_PALETTES[i][1], KNOWN_NICE_PALETTES[i][2], KNOWN_NICE_PALETTES[i][3], KNOWN_NICE_PALETTES[i][4]];
     this.hsvPalette = [];
     this.rgbPalette = [];
-    for (var i = 0; i < ((IQ_REVERSE_SPECTRUM) ? this.numGens / 2 : this.numGens); i++)
+    for (var i = 0; i < this.numGens; i++)
     {
       var rgb = IqPalette(i * (this.dt), this.palette[0], this.palette[1], this.palette[2], this.palette[3]);
       this.rgbPalette.push([rgb[0] * R_MAX, rgb[1] * G_MAX, rgb[2] * B_MAX]);
       var hsv = rgbToHsv([rgb[0] * R_MAX, rgb[1] * G_MAX, rgb[2] * B_MAX]);
       this.hsvPalette.push(hsv);
-    }
-    if (IQ_REVERSE_SPECTRUM)
-    {
-      for (var i = ((IQ_REVERSE_SPECTRUM) ? this.numGens / 2 : this.numGens); i > 0; i--)
-      {
-        var rgb = IqPalette(i * (this.dt), this.palette[0], this.palette[1], this.palette[2], this.palette[3]);
-        this.rgbPalette.push([rgb[0] * R_MAX, rgb[1] * G_MAX, rgb[2] * B_MAX]);
-        var hsv = rgbToHsv([rgb[0] * R_MAX, rgb[1] * G_MAX, rgb[2] * B_MAX]);
-        this.hsvPalette.push(hsv);
-      }
     }
   }
 
@@ -178,7 +162,7 @@ class GoLColorGen
   {
     var rectW = WINDOW_WIDTH/this.numGens;
     var rectH = DEBUG_PALETTE_HEIGHT/2;
-    for (var i = 0; i < this.rgbPalette.length; i++)
+    for (var i = 0; i < this.numGens; i++)
     {
       var x = i * rectW;
       var y = WINDOW_HEIGHT - rectH;
@@ -198,14 +182,6 @@ class GoLColorGen
       colorMode(HSB, H_MAX, S_MAX, V_MAX);
       fill(hsvc[0], hsvc[1], hsvc[2]);
       rect(x, y, rectW, rectH);
-      if (COLOR_MODE_RGB)
-      {
-        colorMode(RGB, R_MAX, G_MAX, B_MAX);
-      }
-      else
-      {
-        colorMode(HSB, H_MAX, S_MAX, V_MAX);
-      }
       strokeWeight(0);
     }
   }
@@ -217,7 +193,7 @@ class GoLBoard
   {
     this.currentFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
     this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
-    this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [H_DEFAULT, S_DEFAULT, V_DEFAULT]));
+    this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [0,0,100]));
     this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
     this.playing = false;
     this.showAliveCells = true;
@@ -251,7 +227,7 @@ class GoLBoard
   {
     this.currentFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
     this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
-    this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [H_DEFAULT,S_DEFAULT,V_DEFAULT]));
+    this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [0,0,100]));
     this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
     this.playing = false;
     this.showAliveCells = true;
@@ -420,7 +396,7 @@ class GoLBoard
     {
       for (var x = 0; x < GRID_CELLS_X; x++)
       {
-        var cellColor = [0, 0, 0];
+        var cellColor = [0, 0, 100];
         if (COLORED)
         {
           cellColor = this.coloredFrame[y][x];
@@ -429,40 +405,16 @@ class GoLBoard
         {
           if (this.showAliveCells)
           {
-            if (COLOR_MODE_RGB)
-            {
-              var conv = hsvToRgb([H_ALIVE, S_ALIVE, V_ALIVE]);
-              fill(conv[0], conv[1], conv[2]);
-            }
-            else
-            {
-              fill(H_ALIVE, S_ALIVE, V_ALIVE);
-            }
-          }
-          else
-          {
-            if (COLOR_MODE_RGB)
-            {
-              var conv = hsvToRgb(cellColor);
-              fill(conv[0], conv[1], conv[2]);
-            }
-            else
-            {
-              fill(cellColor[0], cellColor[1], cellColor[2]);
-            }
-          }
-        }
-        else
-        {
-          if (COLOR_MODE_RGB)
-          {
-            var conv = hsvToRgb(cellColor);
-            fill(conv[0], conv[1], conv[2]);
+            fill(0, 0, 0);
           }
           else
           {
             fill(cellColor[0], cellColor[1], cellColor[2]);
           }
+        }
+        else
+        {
+          fill(cellColor[0], cellColor[1], cellColor[2]);
         }
         
         strokeWeight(STROKE_WEIGHT);
@@ -567,11 +519,6 @@ class Canvas
     }
   }
 
-  drawGlider(centerx, centery, direction)
-  {
-    
-  }
-
   reset()
   {
     this.board.reset();
@@ -666,14 +613,7 @@ p5jsCanvas = undefined;
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
-  if (COLOR_MODE_RGB)
-  {
-    colorMode(RGB, R_MAX, G_MAX, B_MAX);
-  }
-  else
-  {
-    colorMode(HSB, H_MAX, S_MAX, V_MAX);
-  }
+  colorMode(HSB, H_MAX, S_MAX, V_MAX);
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
