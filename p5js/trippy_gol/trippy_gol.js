@@ -15,8 +15,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 400;
+var WINDOW_WIDTH  = 400;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -43,7 +43,7 @@ var COLORED = true;
 var IQ_COLOR_SCHEME = true; 
 var COLOR_MODE_RGB = true;
 
-var DEFAULT_IQ_NUMGENS = 50;
+var DEFAULT_IQ_NUMGENS = 200;
 var DEFAULT_IQ_COLOR_PALETTE = 10;//13;
 var IQ_REVERSE_SPECTRUM = true;
 
@@ -89,22 +89,6 @@ var DEBUG_PALETTE = false;
 var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 ////////////////////////
-
-class GoLCell
-{
-  constructor(x, y, board)
-  {
-    this.alive = false;
-    this.x = x;
-    this.y = y;
-    this.board = board;
-  }
-
-  set(alive)
-  {
-    this.alive = alive;
-  }
-}
 
 class GoLColorGen
 {
