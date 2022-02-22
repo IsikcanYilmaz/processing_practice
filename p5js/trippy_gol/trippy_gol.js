@@ -43,11 +43,12 @@ var COLORED = true;
 var IQ_COLOR_SCHEME = true; 
 var COLOR_MODE_RGB = true;
 
-var DEFAULT_IQ_NUMGENS = 200;
+var DEFAULT_IQ_NUMGENS = 50;
 var DEFAULT_IQ_COLOR_PALETTE = 10;//13;
 var IQ_REVERSE_SPECTRUM = true;
 
 var STROKE_WEIGHT = 0;
+var STROKE_COLOR = [R_MAX, G_MAX, B_MAX];
 
 var H_DEFAULT = 0;
 var S_DEFAULT = IQ_COLOR_SCHEME ? 0 : 100;
@@ -71,6 +72,11 @@ var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
 var SAVE_FRAMES = false;
 var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
+
+var PATTERN_PREVIEW = true;
+var PATTERN_CURRENT_ID = 0;
+var PATTERN_SHADOW_MODE = true;
+var PATTERN_SHADOW_COLOR = [0, 0xf, 0xff];
 
 var FRAME_LIMITING = false;
 var FRAME_PER_SECOND = 60;
@@ -202,6 +208,7 @@ class GoLBoard
     this.currentFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
     this.nextFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
     this.coloredFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => [H_DEFAULT, S_DEFAULT, V_DEFAULT]));
+    this.shadowFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
     this.color = [H_DEFAULT, S_DEFAULT, V_DEFAULT];
     this.playing = false;
     this.showAliveCells = true;
@@ -273,6 +280,21 @@ class GoLBoard
       this.coloredFrame[GRID_CELLS_Y-y][x] = [0,0,0];
       this.coloredFrame[GRID_CELLS_Y-y][GRID_CELLS_X-x] = [0,0,0];
     }
+  }
+
+  setShadowCell(x, y)
+  {
+    this.shadowFrame[y][x] = 1;
+  }
+
+  getShadowCell(x, y)
+  {
+    return this.shadowFrame[y][x];
+  }
+
+  resetShadowCell()
+  {
+    this.shadowFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
   }
 
   getCell(x, y)
@@ -453,8 +475,14 @@ class GoLBoard
             fill(cellColor[0], cellColor[1], cellColor[2]);
           }
         }
+
+        if (PATTERN_SHADOW_MODE && this.getShadowCell(x, y) == 1)
+        {
+          fill(PATTERN_SHADOW_COLOR[0], PATTERN_SHADOW_COLOR[1], PATTERN_SHADOW_COLOR[2]);
+        }
         
         strokeWeight(STROKE_WEIGHT);
+        stroke(STROKE_COLOR);
         rect(x * GRID_RENDER_CELL_WIDTH, y * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
         if (VISUAL_MIRROR)
         {
@@ -464,7 +492,7 @@ class GoLBoard
         }
         this.coloredFrame[y][x] = [(cellColor[0] - H_DECAY < 0) ? 0 : (cellColor[0] - H_DECAY), 
           (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
-          (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)];
+          (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)]; 
       }
     }
   }
@@ -556,9 +584,46 @@ class Canvas
     }
   }
 
-  drawGlider(centerx, centery, direction)
+  drawPattern(pattern, mx, my)
   {
-    
+    for (var y = 0; y < pattern.length; y++)
+    {
+      for (var x = 0; x < pattern[0].length; x++)
+      {
+        if (pattern[y][x])
+        {
+          var cellX = int((mx + x * GRID_RENDER_CELL_WIDTH) / GRID_RENDER_CELL_WIDTH);
+          var cellY = int((my + y * GRID_RENDER_CELL_HEIGHT) / GRID_RENDER_CELL_HEIGHT);
+          if (cellX < GRID_CELLS_X && cellX >= 0 && cellY < GRID_CELLS_Y && cellY >= 0)
+          {
+            this.board.setCell(cellX, cellY);
+          }
+        }
+      }
+    }
+  }
+
+  drawPatternShadow(pattern, mx, my)
+  {
+    if (!PATTERN_SHADOW_MODE)
+    {
+      return;
+    }
+    for (var y = 0; y < pattern.length; y++)
+    {
+      for (var x = 0; x < pattern[0].length; x++)
+      {
+        if (pattern[y][x])
+        {
+          var cellX = int((mx + x * GRID_RENDER_CELL_WIDTH) / GRID_RENDER_CELL_WIDTH);
+          var cellY = int((my + y * GRID_RENDER_CELL_HEIGHT) / GRID_RENDER_CELL_HEIGHT);
+          if (cellX < GRID_CELLS_X && cellX >= 0 && cellY < GRID_CELLS_Y && cellY >= 0)
+          {
+            this.board.setShadowCell(cellX, cellY);
+          }
+        }
+      }
+    }
   }
 
   reset()
@@ -574,8 +639,10 @@ function mouseClickedGeneric(mouseX, mouseY)
   myCanvas.mouseInput(mouseX, mouseY);
 }
 
-function keyPressedGeneric(k)
+function keyPressedGeneric(k, x, y)
 {
+  var mx = x || 0;
+  var my = y || 0;
   console.log("KEY PRESSED", key);
   if (key == ' ')
   {
@@ -622,12 +689,46 @@ function keyPressedGeneric(k)
   {
     myCanvas.board.killAll();
   }
+  if (key == 's')
+  {
+    STROKE_WEIGHT = (STROKE_WEIGHT == 1) ? 0 : 1;
+  }
+  if (key == 'X')
+  {
+    PATTERN_SHADOW_MODE = !PATTERN_SHADOW_MODE;
+    console.log("Pattern shadow:", PATTERN_SHADOW_MODE);
+  }
+  if (key == 'x')
+  {
+    console.log("Draw pattern", PATTERN_CURRENT_ID, "at", mx, my);
+    var pattern = patterns[PATTERN_CURRENT_ID];
+    myCanvas.drawPattern(pattern, mouseX, mouseY);
+  }
+  if (key == '+')
+  {
+    PATTERN_CURRENT_ID = (PATTERN_CURRENT_ID + 1) % patterns.length;
+  }
+  if (key == '-')
+  {
+    PATTERN_CURRENT_ID = (PATTERN_CURRENT_ID - 1);
+    PATTERN_CURRENT_ID = (PATTERN_CURRENT_ID < 0) ? patterns.length - 1 : PATTERN_CURRENT_ID;
+  }
 }
 
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
   mouseClickedGeneric(mouseX, mouseY);
+}
+
+function mouseMoved()
+{
+  if (PATTERN_SHADOW_MODE)
+  {
+    myCanvas.board.resetShadowCell();
+    var pattern = patterns[PATTERN_CURRENT_ID];
+    myCanvas.drawPatternShadow(pattern, mouseX, mouseY);
+  }
 }
 
 function mouseDragged()
@@ -644,7 +745,7 @@ function mouseWheel(event)
 
 function keyPressed()
 {
-  keyPressedGeneric(key);
+  keyPressedGeneric(key, mouseX, mouseY);
 }
 
 function keyReleased()

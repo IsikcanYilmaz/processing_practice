@@ -6,12 +6,19 @@ var glider =       [[1, 1, 1],
 var fig_eight =     [[1, 1, 0, 0, 0, 0],
                      [1, 1, 0, 1, 0, 0],
                      [0, 0, 0, 0, 1, 0],
-                     [0, 1, 0, 0, 1, 1],
-                     [0, 0, 1, 0, 1, 1]];
+                     [0, 1, 0, 0, 0, 0],
+                     [0, 0, 1, 0, 1, 1],
+                     [0, 0, 0, 0, 1, 1]];
 
 var pentadechatlon = [[0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
                       [1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
                       [0, 0, 1, 0, 0, 0, 0, 1, 0, 0]];
+
+var patterns = [
+  glider,
+  fig_eight,
+  pentadechatlon
+];
 
 // HELPER FUNCTIONS 
 // Takes 2d array that is n by n
