@@ -15,8 +15,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 400;
-var WINDOW_WIDTH  = 400;
+var WINDOW_HEIGHT = 800;
+var WINDOW_WIDTH  = 800;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -60,7 +60,7 @@ var V_ALIVE = 100;
 var H_DELTA = 2;
 var H_DECAY = 0;
 var S_DECAY = 0.0; //0.25;
-var V_DECAY = 1;
+var V_DECAY = 0.2;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var UPDATE_PER_SECOND_MAX = 30;
@@ -278,6 +278,11 @@ class GoLBoard
   getCell(x, y)
   {
     return this.currentFrame[y][x];
+  }
+
+  killAll()
+  {
+    this.currentFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
   }
 
   getNumberOfAliveNeighbors(x, y)
@@ -612,6 +617,10 @@ function keyPressedGeneric(k)
   if (key == 'd')
   {
     DEBUG_PALETTE = !DEBUG_PALETTE;
+  }
+  if (key == 'k')
+  {
+    myCanvas.board.killAll();
   }
 }
 
