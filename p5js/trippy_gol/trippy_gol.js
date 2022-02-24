@@ -59,9 +59,9 @@ var S_ALIVE = 0;
 var V_ALIVE = 100;
 
 var H_DELTA = 2;
-var H_DECAY = 0;
+var H_DECAY = 0.0;
 var S_DECAY = 0.0; //0.25;
-var V_DECAY = 0.2;
+var V_DECAY = 2;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var UPDATE_PER_SECOND_MAX = 30;
