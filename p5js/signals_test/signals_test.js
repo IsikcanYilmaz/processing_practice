@@ -37,9 +37,10 @@ var DEBUG_FPS = true;
 
 class ImpulsePanel
 {
-  constructor(osc, numPts, x, y, panelLen)
+  constructor(osc, numPts, x, y, panelLen, op)
   {
-    this.osc = osc;
+    this.osc = (Array.isArray(osc)) ? osc : [osc];
+    this.op = (op) ? op : '+';
     this.numPts = numPts;
     this.x = x;
     this.y = y;
@@ -50,20 +51,49 @@ class ImpulsePanel
 
   draw()
   {
-    this.osc.reset();
+    this.resetOscs();
     stroke([0, 0, 0]);
     strokeWeight(1);
     rect(this.x, this.y, this.panelLen, this.panelHeight);
     for (var i = 0; i < this.numPts; i++)
     {
-      var val = this.osc.getVal() * -1; // -1 due to y starting at 0 at the top
+      var val = this.getValsAndUpdate() * -1; // -1 since the y axis is flipped
       strokeWeight(2);
       var ptX = this.x + (this.ptSpacing * i);
       var ptY = this.y + this.panelHeight / 2 + ((this.panelHeight / 2) * val);
       point(ptX, ptY);
-      this.osc.update();
     }
-    this.osc.reset();
+    this.resetOscs();
+  }
+
+  resetOscs()
+  {
+    for (var i = 0; i < this.osc.length; i++)
+    {
+      this.osc[i].reset();
+    }
+  }
+
+  getValsAndUpdate()
+  {
+    var val = this.osc[0].getVal();
+    this.osc[0].update();
+    for (var i = 1; i < this.osc.length; i++)
+    {
+      switch (this.op)
+      {
+        case '+':
+          val += this.osc[i].getVal();
+          break;
+        case '*':
+          val *= this.osc[i].getVal();
+          break;
+        default:
+          break;
+      }
+      this.osc[i].update();
+    }
+    return val;
   }
 }
 
@@ -71,11 +101,16 @@ class Canvas
 {
   constructor()
   {
-    this.osc1 = new Oscillator(0, 1, 1/FRAME_PER_SECOND);
+    this.osc1 = new Oscillator(0, 5, 1/FRAME_PER_SECOND);
     this.pan1 = new ImpulsePanel(this.osc1, 200, 200, 0, WINDOW_WIDTH - 200);
 
-    this.imp1 = new Impulse(1/FRAME_PERIOD_MS);
-    this.pan2 = new ImpulsePanel(this.imp1, 200, 200, 30, WINDOW_WIDTH - 200);
+    this.osc2 = new Oscillator(0, 10, 1/FRAME_PER_SECOND);
+    this.pan2 = new ImpulsePanel(this.osc2, 200, 200, 30, WINDOW_WIDTH - 200);
+
+    this.imp1 = new Impulse(1/FRAME_PERIOD_MS, 1/100);
+    this.pan3 = new ImpulsePanel(this.imp1, 200, 200, 60, WINDOW_WIDTH - 200);
+
+    this.mulpan = new ImpulsePanel([this.osc1, this.osc2, this.imp1], 200, 200, 90, WINDOW_WIDTH - 200, '*');
   }
 
   getBoxInput()
@@ -95,6 +130,8 @@ class Canvas
   {
     this.pan1.draw();
     this.pan2.draw();
+    this.pan3.draw();
+    this.mulpan.draw();
   }
 
   drawCanvas()

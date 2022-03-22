@@ -1,10 +1,12 @@
 var DEFAULT_DT = 1/30;
+var DEFAULT_IMPULSE_DECAY = 1/10;
 
 class Impulse
 {
-  constructor(dt)
+  constructor(dt, decay)
   {
     this.dt = (dt) ? dt : DEFAULT_DT;
+    this.decay = (decay) ? decay : DEFAULT_IMPULSE_DECAY;
     this.val = 1.0;
     this.t = 0;
   }
@@ -23,7 +25,32 @@ class Impulse
 
   runFunc()
   {
-    return this.val - (this.val/10);
+    return this.val - (this.val * this.decay);
+  }
+
+  getVal()
+  {
+    return this.val;
+  }
+}
+
+class Constant
+{
+  constructor(val)
+  {
+    this.val = (val) ? val : 1.0;
+  }
+
+  reset()
+  {
+  }
+
+  update()
+  {
+  }
+
+  runFunc()
+  {
   }
 
   getVal()
