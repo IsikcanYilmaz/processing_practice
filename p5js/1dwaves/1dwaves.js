@@ -60,14 +60,41 @@ class Canvas
 {
   constructor()
   {
+    this.magOsc = new Oscillator(0, 0.05, 1/FRAME_PER_SECOND);
+    this.freqOsc = new Oscillator(0, 0.05, 1/FRAME_PER_SECOND);
+    this.oscillators = [];
+    this.initFreq = 0.05;
+    for (var i = 0; i < 70; i++)
+    {
+      this.oscillators.push(new Oscillator(i, this.initFreq, 1/FRAME_PER_SECOND));
+    }
   }
 
   updateCanvas()
   {
+    this.magOsc.update();
+    this.freqOsc.update();
+    for (var i = 0; i < this.oscillators.length; i++)
+    {
+      this.oscillators[i].setFreq(this.initFreq + this.freqOsc.getVal());
+      this.oscillators[i].update();
+    }
   }
 
   drawCanvas()
   {
+    background(DEFAULT_BACKGROUND);
+    var x = 0;
+    var y = WINDOW_HEIGHT/2;
+    var r = 10;
+    var mag = WINDOW_HEIGHT/4;// * this.magOsc.getVal();
+    noStroke();
+    for (var i = 0; i < this.oscillators.length; i++)
+    {
+      var val = this.oscillators[i].getVal();
+      fill([0, 0, 0]);
+      rect(x + (i * 10), y + (val * mag), r);
+    }
   }
 
   saveFrame()
