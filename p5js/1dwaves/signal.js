@@ -102,4 +102,9 @@ class Oscillator
   {
     return this.val;
   }
+
+  getPhase()
+  {
+    return ((2 * PI * this.freq * this.t + this.initPhase) % (2 * PI)) / (2 * PI);
+  }
 }

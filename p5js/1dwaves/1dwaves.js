@@ -1,5 +1,3 @@
-// https://iquilezles.org/www/articles/palettes/palettes.htm
-
 var WINDOW_HEIGHT = 600;
 var WINDOW_WIDTH  = 600;
 
@@ -11,7 +9,7 @@ var H_MAX = 360;
 var S_MAX = 100;
 var V_MAX = 100;
 
-var DEFAULT_BACKGROUND = [0, 0, 100];
+var DEFAULT_BACKGROUND = [0, 0, 0];
 var DEFAULT_STROKE_COLOR = [250, 100, 100];
 
 var STROKE_WEIGHT = 10;
@@ -60,13 +58,14 @@ class Canvas
 {
   constructor()
   {
-    this.magOsc = new Oscillator(0, 0.05, 1/FRAME_PER_SECOND);
-    this.freqOsc = new Oscillator(0, 0.05, 1/FRAME_PER_SECOND);
+    this.magOsc = new Oscillator(0, 0.01, 1/FRAME_PER_SECOND);
+    this.freqOsc = new Oscillator(0, 0.0005, 1/FRAME_PER_SECOND);
     this.oscillators = [];
     this.initFreq = 0.05;
-    for (var i = 0; i < 70; i++)
+    this.numOscillators = 70;
+    for (var i = 0; i < this.numOscillators; i++)
     {
-      this.oscillators.push(new Oscillator(i, this.initFreq, 1/FRAME_PER_SECOND));
+      this.oscillators.push(new Oscillator(i * 0.2, this.initFreq, 1/FRAME_PER_SECOND));
     }
   }
 
@@ -76,24 +75,33 @@ class Canvas
     this.freqOsc.update();
     for (var i = 0; i < this.oscillators.length; i++)
     {
-      this.oscillators[i].setFreq(this.initFreq + this.freqOsc.getVal());
+      this.oscillators[i].setFreq(this.initFreq + this.freqOsc.getVal()/4);
       this.oscillators[i].update();
     }
   }
 
   drawCanvas()
   {
-    background(DEFAULT_BACKGROUND);
+    //background(DEFAULT_BACKGROUND);
     var x = 0;
     var y = WINDOW_HEIGHT/2;
-    var r = 10;
+    var r = 6;
     var mag = WINDOW_HEIGHT/4;// * this.magOsc.getVal();
+    var pointDist = WINDOW_WIDTH / this.numOscillators;
     noStroke();
     for (var i = 0; i < this.oscillators.length; i++)
     {
       var val = this.oscillators[i].getVal();
-      fill([0, 0, 0]);
-      rect(x + (i * 10), y + (val * mag), r);
+      var phase = this.oscillators[i].getPhase();
+      var phaseFactorBase = 0.5;
+      var phaseFactor = phase;
+      if (phase > 0.5)
+      {
+        phaseFactor = 1 - phase;
+      }
+      phaseFactor += phaseFactorBase;
+      fill([80 + (230 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      rect(x + (i * pointDist), y - (val * mag), r);
     }
   }
 
@@ -108,7 +116,14 @@ class Canvas
 
 function refreshButtonPressed()
 {
-  myCanvas.getBoxInput();
+}
+
+function keyPressedGeneric(k)
+{
+  if (k == 'r')
+  {
+    background(DEFAULT_BACKGROUND);
+  }
 }
 
 function mouseMoved()
@@ -122,6 +137,7 @@ function mouseWheel()
 function keyPressed()
 {
   console.log("KEY PRESSED", key);
+  keyPressedGeneric(key);
 }
 
 function keyReleased()
