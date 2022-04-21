@@ -59,7 +59,7 @@ class Canvas
   constructor()
   {
     this.magOsc = new Oscillator(0, 0.01, 1/FRAME_PER_SECOND);
-    this.freqOsc = new Oscillator(0, 0.0005, 1/FRAME_PER_SECOND);
+    this.freqOsc = new Oscillator(0, 0.005, 1/FRAME_PER_SECOND);
     this.oscillators = [];
     this.initFreq = 0.05;
     this.numOscillators = 70;
@@ -75,17 +75,17 @@ class Canvas
     this.freqOsc.update();
     for (var i = 0; i < this.oscillators.length; i++)
     {
-      this.oscillators[i].setFreq(this.initFreq + this.freqOsc.getVal()/4);
+      this.oscillators[i].setFreq(this.freqOsc.getVal()/4);
       this.oscillators[i].update();
     }
   }
 
   drawCanvas()
   {
-    //background(DEFAULT_BACKGROUND);
+    background(DEFAULT_BACKGROUND);
     var x = 0;
-    var y = WINDOW_HEIGHT/2;
-    var r = 6;
+    var y = WINDOW_HEIGHT/4;
+    var r = 4;
     var mag = WINDOW_HEIGHT/4;// * this.magOsc.getVal();
     var pointDist = WINDOW_WIDTH / this.numOscillators;
     noStroke();
@@ -102,6 +102,12 @@ class Canvas
       phaseFactor += phaseFactorBase;
       fill([80 + (230 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
       rect(x + (i * pointDist), y - (val * mag), r);
+      fill([100 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      rect(x + (i * pointDist) + r, 2 * y - ((1 - val) * mag), r);
+      fill([200 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      rect(x + (i * pointDist) + 2 * r, 0.5 * y + ((1 - val) * mag/2), r);
+      fill([300 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      rect(x + (i * pointDist) + 2 * r, 1.5 * y - ((1 - val) * mag/2), r);
     }
   }
 
