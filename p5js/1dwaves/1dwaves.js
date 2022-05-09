@@ -75,7 +75,7 @@ class Canvas
     this.freqOsc.update();
     for (var i = 0; i < this.oscillators.length; i++)
     {
-      this.oscillators[i].setFreq(this.freqOsc.getVal()/4);
+      this.oscillators[i].setFreq(this.freqOsc.getVal());
       this.oscillators[i].update();
     }
   }
@@ -85,7 +85,7 @@ class Canvas
     background(DEFAULT_BACKGROUND);
     var x = 0;
     var y = WINDOW_HEIGHT/4;
-    var r = 4;
+    var r = 10;
     var mag = WINDOW_HEIGHT/4;// * this.magOsc.getVal();
     var pointDist = WINDOW_WIDTH / this.numOscillators;
     noStroke();
@@ -100,14 +100,18 @@ class Canvas
         phaseFactor = 1 - phase;
       }
       phaseFactor += phaseFactorBase;
-      fill([80 + (230 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
-      rect(x + (i * pointDist), y - (val * mag), r);
-      fill([100 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
-      rect(x + (i * pointDist) + r, 2 * y - ((1 - val) * mag), r);
-      fill([200 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
-      rect(x + (i * pointDist) + 2 * r, 0.5 * y + ((1 - val) * mag/2), r);
-      fill([300 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
-      rect(x + (i * pointDist) + 2 * r, 1.5 * y - ((1 - val) * mag/2), r);
+      //fill([80 + (230 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      for (var j = 0; j < 20; j++)
+      {
+        fill([(80 + (230 * phaseFactor) + (j * 5 * phaseFactor)) % H_MAX, 100 * phaseFactor * (10/j), 100 * phaseFactor]);
+        rect(x + (i * pointDist), y - (val * mag) + j * 10, r * phaseFactor * phaseFactor * 4);
+      }
+      //fill([100 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      //rect(x + (i * pointDist) + r, 2 * y - ((1 - val) * mag), r);
+      //fill([200 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      //rect(x + (i * pointDist) + 2 * r, 0.5 * y + ((1 - val) * mag/2), r);
+      //fill([300 + (160 * phaseFactor), 100 * phaseFactor, 100 * phaseFactor]);
+      //rect(x + (i * pointDist) + 2 * r, 1.5 * y - ((1 - val) * mag/2), r);
     }
   }
 
