@@ -116,7 +116,7 @@ class CustomSquare {
       
       this.calculateCoords();
     }
-    this.calculateColor();
+    //this.calculateColor();
   }
 
   draw()
@@ -151,7 +151,7 @@ class CustomSquare {
 function mouseMoved()
 {
   inputs[0] = [mouseX, mouseY];
-  inputs[1] = [WINDOW_WIDTH-mouseX, WINDOW_HEIGHT-mouseY];
+  //inputs[1] = [WINDOW_WIDTH-mouseX, WINDOW_HEIGHT-mouseY];
   //inputs[2] = [mouseX, WINDOW_HEIGHT-mouseY];
   //inputs[3] = [WINDOW_WIDTH-mouseX, mouseY];
 }
