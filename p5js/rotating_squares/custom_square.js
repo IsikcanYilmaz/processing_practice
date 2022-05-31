@@ -1,34 +1,5 @@
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
-
-var H_MAX = 360;
-var S_MAX = 100;
-var V_MAX = 100;
-
-var DEFAULT_BACKGROUND = [0, 0, 0];
-var DEFAULT_STROKE_COLOR = [250, 0, 100];
-
-var DEBUGVISUALS = false;
-
-var PI  = Math.PI;
-var TAU = Math.PI * 2;
-
-var COLUMNS = 60;
-var DEFAULT_SQUARE_WIDTH = 1;
-var DEFAULT_SQUARE_AREA_WIDTH = 20;
-var DEFAULT_X_OFFSET = 100;
-var DEFAULT_Y_OFFSET = 100;
-var DEFAULT_WIDTH_UP_SPEED = 0.3;
-var DEFAULT_WIDTH_DOWN_SPEED = 0.6;
-var DEFAULT_SQUARE_THICKNESS = 3;
-var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
-var COLORED = false;
-
-inputs = [[999,999]];
-
-////////////////////////
-
-class CustomSquare {
+class CustomSquare 
+{
   constructor(x, y, width, thickness=1, angle=0, widthUpSpeed=999, widthDownSpeed=999)
   {
     this.x = x;
@@ -113,15 +84,11 @@ class CustomSquare {
         this.width = this.widthTarget;
       }
 
-      //this.rotate(this.width*360/DEFAULT_SQUARE_AREA_WIDTH);
+      this.rotate(this.width*360/DEFAULT_SQUARE_AREA_WIDTH);
       
       this.calculateCoords();
     }
-
-    if (COLORED)
-    {
-      this.calculateColor();
-    }
+    this.calculateColor();
   }
 
   draw()
@@ -148,99 +115,4 @@ class CustomSquare {
   {
     this.widthTarget = w;
   }
-
-}
-
-class AutoInput
-{
-  constructor(x, y)
-  {
-    this.x = x;
-    this.y = y;
-  }
-
-  update()
-  {
-
-  }
-
-}
-
-class Canvas
-{
-  constructor()
-  {
-    this.squares = [];
-    for (var i = 0; i < COLUMNS; i++)
-    {
-      for (var j = 0; j < COLUMNS; j++)
-      {
-        this.squares.push(new CustomSquare(DEFAULT_X_OFFSET + (i * DEFAULT_SQUARE_AREA_WIDTH), 
-                                      DEFAULT_Y_OFFSET + (j * DEFAULT_SQUARE_AREA_WIDTH), 
-                                      DEFAULT_SQUARE_WIDTH, 
-                                      DEFAULT_SQUARE_THICKNESS, 
-                                      DEFAULT_WIDTH_UP_SPEED, 
-                                      DEFAULT_WIDTH_DOWN_SPEED));
-      }
-    }
-  }
-
-  update()
-  {
-
-    // update squares
-    for (var idx = 0; idx < this.squares.length; idx++)
-    {
-      this.squares[idx].update();
-    }
-  }
-
-  draw()
-  {
-
-    //draw squares
-    for (var idx = 0; idx < this.squares.length; idx++)
-    {
-      this.squares[idx].draw();
-    }
-  }
-}
-
-////////////////////////
-
-function mouseMoved()
-{
-  inputs[0] = [mouseX, mouseY];
-  //inputs[1] = [WINDOW_WIDTH-mouseX, WINDOW_HEIGHT-mouseY];
-  //inputs[2] = [mouseX, WINDOW_HEIGHT-mouseY];
-  //inputs[3] = [WINDOW_WIDTH-mouseX, mouseY];
-}
-
-function touchMoved()
-{
-  inputs[0] = [touches[0][0], touches[0][1]];
-}
-
-function mouseWheel()
-{
-  DEFAULT_STROKE_COLOR[0] += (event.delta > 0 ? 10 : -10) % H_MAX;
-}
-
-////////////////////////
-
-canvas = undefined;
-function setup()
-{
-  createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
-  colorMode(HSB, H_MAX, S_MAX, V_MAX);
-  background(DEFAULT_BACKGROUND);
-  textSize(12);
-  canvas = new Canvas();
-}
-
-function draw()
-{
-  background(DEFAULT_BACKGROUND);
-  canvas.update();
-  canvas.draw();
 }
