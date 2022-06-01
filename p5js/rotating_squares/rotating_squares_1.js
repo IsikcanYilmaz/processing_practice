@@ -23,6 +23,7 @@ var DEFAULT_WIDTH_DOWN_SPEED = 0.6;
 var DEFAULT_SQUARE_THICKNESS = 3;
 var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
 var COLORED = false;
+var ROTATION = false;
 
 inputs = [[999,999]];
 
@@ -113,8 +114,11 @@ class CustomSquare {
         this.width = this.widthTarget;
       }
 
-      //this.rotate(this.width*360/DEFAULT_SQUARE_AREA_WIDTH);
-      
+      if (ROTATE)
+      {
+        this.rotate(this.width*360/DEFAULT_SQUARE_AREA_WIDTH);
+      }
+
       this.calculateCoords();
     }
 
