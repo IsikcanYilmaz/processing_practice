@@ -218,7 +218,7 @@ function mouseMoved()
 
 function touchMoved()
 {
-  inputs[0] = [touches[0][0], touches[0][1]];
+  //inputs[0] = [touches[0][0], touches[0][1]];
 }
 
 function mouseWheel()
