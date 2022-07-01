@@ -1,5 +1,5 @@
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 200;
+var WINDOW_WIDTH  = 200;
 
 var H_MAX = 360;
 var S_MAX = 100;

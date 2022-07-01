@@ -30,7 +30,7 @@ class Impulse
 
   getVal()
   {
-    return this.val;
+    return (this.val > 0) ? this.val : 0;
   }
 }
 

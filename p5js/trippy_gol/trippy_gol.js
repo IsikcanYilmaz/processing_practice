@@ -61,9 +61,10 @@ var V_ALIVE = 100;
 var H_DELTA = 2;
 var H_DECAY = 0.0;
 var S_DECAY = 0.0; //0.25;
-var V_DECAY = 2;
+var V_DECAY = 10;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
+var MAX_UPDATE_PER_SECOND = 50;
 var UPDATE_PER_SECOND_MAX = 30;
 var UPDATE_PER_SECOND_MIN = 0.5;
 
@@ -213,8 +214,9 @@ class GoLBoard
     this.playing = false;
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
-    this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
+    this.speedImpulse = new Impulse(1/30, 0.1);
     this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
+    this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
   }
 
   setFrameFrequency(hz)
@@ -358,6 +360,12 @@ class GoLBoard
     {
       return;
     }
+
+    // Update oscillators or signal sources
+    this.speedImpulse.update();
+
+    // Pipe from oscillators/signals to destinations
+    this.setFrameFrequency(MAX_UPDATE_PER_SECOND * this.speedImpulse.getVal());
 
     // Frame per second limiting
     var now = Date.now();
@@ -582,6 +590,7 @@ class Canvas
       this.mouseInput(centerx + vec.x, centery + vec.y);
       vec.rotate(360 / DRAW_CIRCLE_GRANULARITY);
     }
+    this.board.speedImpulse.reset();
   }
 
   drawPattern(pattern, mx, my)
@@ -703,6 +712,10 @@ function keyPressedGeneric(k, x, y)
     console.log("Draw pattern", PATTERN_CURRENT_ID, "at", mx, my);
     var pattern = patterns[PATTERN_CURRENT_ID];
     myCanvas.drawPattern(pattern, mouseX, mouseY);
+  }
+  if (key == 'z')
+  {
+    myCanvas.board.speedImpulse.reset();
   }
   if (key == '+')
   {

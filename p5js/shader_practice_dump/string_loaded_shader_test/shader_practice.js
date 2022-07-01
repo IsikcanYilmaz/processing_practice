@@ -10,7 +10,7 @@ let fs = varying + frag;
 
 let mandel;
 function setup() {
-  createCanvas(100, 100, WEBGL);
+  createCanvas(600, 600, WEBGL);
 
   // create and initialize the shader
   mandel = createShader(vs, fs);
