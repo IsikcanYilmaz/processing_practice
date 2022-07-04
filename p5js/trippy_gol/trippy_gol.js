@@ -61,7 +61,7 @@ var V_ALIVE = 100;
 var H_DELTA = 2;
 var H_DECAY = 0.0;
 var S_DECAY = 0.0; //0.25;
-var V_DECAY = 10;
+var V_DECAY = 2;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var MAX_UPDATE_PER_SECOND = 50;
@@ -89,11 +89,25 @@ if (SAVE_FRAMES)
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var TOGGLE_DEBUG_ALLOWED = false;
-var DEBUG_FPS = false;
+var DEBUG_FPS = true;
 var DEBUG_PAUSING = false;
 var DEBUG_PALETTE = false;
 
 var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
+
+var AUTO_INPUT_ENABLED = false;
+var AUTO_INPUT_LIST_FRAME = [
+                            [0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
+                            [0, "loop", "begin", 10],
+                            [30, "key", "c"], [30, "key", "z"],
+                            [1, "loop", "end"], 
+                            [0, "key", "o"],
+                            [0, "loop", "begin", 100],
+                            [1, "key", "z"], [1, "key", "z"],
+                            [1, "key", "z"], [1, "key", "z"],
+                            [1, "key", "z"], [1, "key", "c"],
+                            [1, "loop", "end"], 
+                            ];
 
 ////////////////////////
 
@@ -232,7 +246,7 @@ class GoLBoard
     this.frameFrequency = hz;
     this.framePeriod = 1.0/hz;
     this.framePeriodMs = this.framePeriod * 1000;
-    console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
+    //console.log("NEW FREQ:", this.frameFrequency, "NEW PERIOD:", this.framePeriodMs);
   }
 
   getFrameFrequency()
@@ -652,27 +666,27 @@ function keyPressedGeneric(k, x, y)
 {
   var mx = x || 0;
   var my = y || 0;
-  console.log("KEY PRESSED", key);
-  if (key == ' ')
+  console.log("KEY PRESSED", k);
+  if (k == ' ')
   {
     myCanvas.togglePause();
   }
-  if (key == 'r')
+  if (k == 'r')
   {
     myCanvas.reset();
   }
-  if (key == 'a')
+  if (k == 'a')
   {
     myCanvas.board.toggleShowAliveCells();
   }
-  if (key == 'c')
+  if (k == 'c')
   {
     var centerx = WINDOW_WIDTH/2;
     var centery = WINDOW_HEIGHT/2;
     var r = Math.random() * (DRAW_CIRCLE_RAND_MAX - DRAW_CIRCLE_RAND_MIN) + DRAW_CIRCLE_RAND_MIN;
     myCanvas.drawCircle(centerx, centery, r);
   }
-  if (key == 'C')
+  if (k == 'C')
   {
     var centerx = WINDOW_WIDTH/2;
     var centery = WINDOW_HEIGHT/2;
@@ -681,50 +695,63 @@ function keyPressedGeneric(k, x, y)
     var r = createVector(centerDiffX, centerDiffY).mag();
     myCanvas.drawCircle(centerx, centery, r);
   }
-  if (key == 'p')
+  if (k == 'p')
   {
     myCanvas.board.golColorGen.setColorPalette((myCanvas.board.golColorGen.getColorPalette() + 1) % KNOWN_NICE_PALETTES.length);
   }
-  if (key == 'o')
+  if (k == 'o')
   {
     COLORED = !COLORED;
     console.log("COLORED:", COLORED);
   }
-  if (key == 'd')
+  if (k == 'd')
   {
     DEBUG_PALETTE = !DEBUG_PALETTE;
   }
-  if (key == 'k')
+  if (k == 'k')
   {
     myCanvas.board.killAll();
   }
-  if (key == 's')
+  if (k == 's')
   {
     STROKE_WEIGHT = (STROKE_WEIGHT == 1) ? 0 : 1;
   }
-  if (key == 'X')
+  if (k == 'X')
   {
     PATTERN_SHADOW_MODE = !PATTERN_SHADOW_MODE;
     console.log("Pattern shadow:", PATTERN_SHADOW_MODE);
   }
-  if (key == 'x')
+  if (k == 'x')
   {
     console.log("Draw pattern", PATTERN_CURRENT_ID, "at", mx, my);
     var pattern = patterns[PATTERN_CURRENT_ID];
     myCanvas.drawPattern(pattern, mouseX, mouseY);
   }
-  if (key == 'z')
+  if (k == 'z')
   {
     myCanvas.board.speedImpulse.reset();
   }
-  if (key == '+')
+  if (k == '+')
   {
     PATTERN_CURRENT_ID = (PATTERN_CURRENT_ID + 1) % patterns.length;
   }
-  if (key == '-')
+  if (k == '-')
   {
     PATTERN_CURRENT_ID = (PATTERN_CURRENT_ID - 1);
     PATTERN_CURRENT_ID = (PATTERN_CURRENT_ID < 0) ? patterns.length - 1 : PATTERN_CURRENT_ID;
+  }
+  if (k == 'i')
+  {
+    if (!AUTO_INPUT_ENABLED)
+    {
+      autoInput.reset();
+      autoInput.start();
+    }
+    else
+    {
+      autoInput.stop();
+    }
+    AUTO_INPUT_ENABLED = ~AUTO_INPUT_ENABLED;
   }
 }
 
@@ -770,6 +797,7 @@ function keyReleased()
 
 myCanvas = undefined; 
 p5jsCanvas = undefined;
+autoInput = undefined;
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -785,6 +813,14 @@ function setup()
   textSize(12);
   smooth(8);
   myCanvas = new Canvas();
+
+  autoInput = new AutoInput(AUTO_INPUT_LIST_FRAME, mouseClickedGeneric, keyPressedGeneric);
+  autoInput.setMode("frame");
+  autoInput.setOverallLoopEnabled(false);
+  if (AUTO_INPUT_ENABLED)
+  {
+    autoInput.start();
+  }
 }
 
 var lastFrameTs = 0;
@@ -804,6 +840,10 @@ function draw()
     }
   }
   lastFrameTs = frameTs;
+  if (AUTO_INPUT_ENABLED)
+  {
+    autoInput.updateFrame();
+  }
   myCanvas.updateCanvas();
   myCanvas.drawCanvas();
   myCanvas.drawDebugPanel();
