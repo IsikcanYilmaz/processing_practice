@@ -61,7 +61,7 @@ var V_ALIVE = 100;
 var H_DELTA = 2;
 var H_DECAY = 0.0;
 var S_DECAY = 0.0; //0.25;
-var V_DECAY = 2;
+var V_DECAY = 10;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var MAX_UPDATE_PER_SECOND = 50;
@@ -89,7 +89,7 @@ if (SAVE_FRAMES)
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var TOGGLE_DEBUG_ALLOWED = false;
-var DEBUG_FPS = true;
+var DEBUG_FPS = false;
 var DEBUG_PAUSING = false;
 var DEBUG_PALETTE = false;
 
@@ -99,13 +99,7 @@ var AUTO_INPUT_ENABLED = false;
 var AUTO_INPUT_LIST_FRAME = [
                             [0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
                             [0, "loop", "begin", 10],
-                            [30, "key", "c"], [30, "key", "z"],
-                            [1, "loop", "end"], 
-                            [0, "key", "o"],
-                            [0, "loop", "begin", 100],
-                            [1, "key", "z"], [1, "key", "z"],
-                            [1, "key", "z"], [1, "key", "z"],
-                            [1, "key", "z"], [1, "key", "c"],
+                            [20, "key", "c"], [20, "key", "z"],
                             [1, "loop", "end"], 
                             ];
 
