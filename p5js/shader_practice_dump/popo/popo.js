@@ -30,13 +30,14 @@ let theShader;
 
 function preload(){
   // load the shader
-  theShader = loadShader('shader_practice.vert', 'shader_practice.frag');
+  //theShader = loadShader('shader_practice.vert', 'shader_practice.frag');
 }
 
 function setup()
 {
   pixelDensity(1); // disable scaling for retina displays
   createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT, WEBGL);
+  theShader = createShader(vs, fs);
   noStroke()
 }
 
