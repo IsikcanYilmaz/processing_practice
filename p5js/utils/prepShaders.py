@@ -2,6 +2,16 @@
 
 import sys, os 
 
+suffix = '''
+let varying = 'precision highp float; varying vec2 vPos;';
+let vs = varying + vert;
+let fs = varying + frag;
+// Now all you gotta do is to call:
+// let theShader; theShader = createShader(vs, fs);
+// and in draw() do: 
+// shader(theShader);
+'''
+
 def process(linesarr):
     content = []
     for i in linesarr:
@@ -36,6 +46,7 @@ def writeToFile(vert, frag, projname):
     f = open(projname + ".js", "w")
     f.write(vert)
     f.write(frag)
+    f.write(suffix)
     f.close()
 
 def main():
