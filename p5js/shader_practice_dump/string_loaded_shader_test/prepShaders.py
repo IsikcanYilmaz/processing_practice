@@ -72,7 +72,7 @@ def main():
     fragcontent = formatContent("frag", fragcontent)
 
     # write content to file
-    writeToFile(vertcontent, fragcontent, projname)
+    writeToFile(vertcontent, fragcontent, projname + "_shaders")
 
     return 0
 
