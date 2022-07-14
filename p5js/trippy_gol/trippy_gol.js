@@ -98,10 +98,16 @@ var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 var AUTO_INPUT_ENABLED = false;
 var AUTO_INPUT_LIST_FRAME = [
                             [0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
-                            [0, "loop", "begin", 10],
+                            [0, "loop", "begin", 999],
                             [20, "key", "c"], [20, "key", "z"],
                             [1, "loop", "end"], 
                             ];
+
+var MOBILE = false;
+if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
+  MOBILE = true;
+  AUTO_INPUT_ENABLED = true;
+}
 
 ////////////////////////
 
