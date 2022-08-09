@@ -10,14 +10,12 @@
 // Can work based off of "time" or "frames". If it's based off of frames, one needs to call the updateFrame() member function continuously
 class AutoInput
 {
-  constructor(inputList, mousein, keyin)
+  constructor(inputList)
   {
     this.initTs = Date.now();
     this.inputList = inputList;
     this.idx = 0;
     this.playing = false;
-    this.mousein = mousein;
-    this.keyin = keyin;
     this.overallLoopEnabled = false;
     this.mode = "time";
     this.frame = 0;
@@ -29,6 +27,11 @@ class AutoInput
 
   setCallbackFunction(name, callback)
   {
+    if (name == "loop")
+    {
+      console.error("[!] Callback function name cannot be loop!");
+      return;
+    }
     this.callbacks[name] = callback;
   }
 

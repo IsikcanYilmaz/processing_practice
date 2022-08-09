@@ -10,14 +10,12 @@
 // Can work based off of "time" or "frames". If it's based off of frames, one needs to call the updateFrame() member function continuously
 class AutoInput
 {
-  constructor(inputList, mousein, keyin)
+  constructor(inputList)
   {
     this.initTs = Date.now();
     this.inputList = inputList;
     this.idx = 0;
     this.playing = false;
-    this.mousein = mousein;
-    this.keyin = keyin;
     this.overallLoopEnabled = false;
     this.mode = "time";
     this.frame = 0;
