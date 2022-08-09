@@ -1,11 +1,9 @@
 // This object expects an array of inputs, each element of which looks like
-// [time, x, y], where time is in Ms
+// [time, "type", x, y], where time is in Ms
 // fn should be the function to be called per the input times
 // [time, type<str>, data**]
-// for type == "mouse":
-//  data looks like <x, y>, [time, "mouse", x, y]
-// for type == "key":
-//  data looks like <key>,  [time, "key", k]
+// Programmer defines their own "type" and argument "data". They need to register
+//  callbacks that will take the data in array form. Exception being "loop" keyword.
 // for type == "loop"
 //  data looks like <begin|end>, [time, "loop", "begin"|"end", loopFor (only for begin)]
 //  once it reaches the "end" of the loop, it loops back to the start and loops for $loopFor times
@@ -26,6 +24,17 @@ class AutoInput
     this.lastFiredFrame = 0;
     this.loopBeginIdx = null;
     this.loopCtr = 0;
+    this.callbacks = {};
+  }
+
+  setCallbackFunction(name, callback)
+  {
+    if (name == "loop")
+    {
+      console.error("[!] Callback function name cannot be loop!");
+      return;
+    }
+    this.callbacks[name] = callback;
   }
 
   setOverallLoopEnabled(l)
@@ -121,58 +130,35 @@ class AutoInput
 
   fire(entry)
   {
-    console.log("FIRING ENTRY", entry);
-    switch(entry[1])
+    console.log("FIRING ENTRY", entry, "CALLBACK FN", this.callbacks[entry[1]]);
+    if (entry[1] == "loop")
     {
-      case "mouse":
+      if (entry[2] == "begin")
       {
-        this.mousein(entry[2], entry[3]);
-        break;
+        this.loopBeginIdx = this.idx;
+        this.loopCtr = entry[3];
+        this.idx++;
       }
-      case "key":
+      else if (entry[2] == "end")
       {
-        this.keyin(entry[2]);
-        break;
-      }
-      case "wait":
-      {
-        break;
-      }
-      case "loop":
-      {
-        if (entry[2] == "begin")
+        this.loopCtr--;
+        if (this.loopCtr != 0)
         {
-          this.loopBeginIdx = this.idx;
-          this.loopCtr = entry[3];
+          this.idx = this.loopBeginIdx + 1;
+        }
+        else
+        {
+          console.log("LOOP DONE");
           this.idx++;
         }
-        else if (entry[2] == "end")
-        {
-          this.loopCtr--;
-          if (this.loopCtr != 0)
-          {
-            this.idx = this.loopBeginIdx + 1;
-          }
-          else
-          {
-            console.log("LOOP DONE");
-            this.idx++;
-          }
-        }
-        break;
-      }
-      default:
-      {
-        console.log("BAD ENTRY", entry);
-        break;
       }
     }
-
-    if (entry[1] != "loop")
+    else
     {
+      this.callbacks[entry[1]](entry.slice(2));
       this.idx++;
     }
-
+    
     if (this.mode == "time")
     {
       this.initiateNext();

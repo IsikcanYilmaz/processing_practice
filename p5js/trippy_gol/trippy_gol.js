@@ -96,10 +96,18 @@ var DEBUG_PALETTE = false;
 var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 var AUTO_INPUT_ENABLED = false;
+//var AUTO_INPUT_LIST_FRAME = [
+                            //[0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
+                            //[0, "loop", "begin", 999],
+                            //[20, "key", "c"], [20, "key", "z"],
+                            //[1, "loop", "end"], 
+                            //];
+
 var AUTO_INPUT_LIST_FRAME = [
-                            [0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
+                            [0, "key", "C", 70+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
                             [0, "loop", "begin", 999],
-                            [20, "key", "c"], [20, "key", "z"],
+                            [20, "key", "C", 70+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+                            [20, "key", "z"], [20, "key", "z"], [20, "key", "z"], 
                             [1, "loop", "end"], 
                             ];
 
@@ -657,16 +665,18 @@ class Canvas
 
 ////////////////////////
 
-function mouseClickedGeneric(mouseX, mouseY)
+function mouseClickedGeneric(arr)
 {
-  myCanvas.mouseInput(mouseX, mouseY);
+  var [x, y] = arr;
+  myCanvas.mouseInput(x, y);
 }
 
-function keyPressedGeneric(k, x, y)
+function keyPressedGeneric(arr)
 {
+  var [k, x, y] = arr;
   var mx = x || 0;
   var my = y || 0;
-  console.log("KEY PRESSED", k);
+  console.log("KEY PRESSED", k, "WITH", x, y, arr);
   if (k == ' ')
   {
     myCanvas.togglePause();
@@ -690,8 +700,8 @@ function keyPressedGeneric(k, x, y)
   {
     var centerx = WINDOW_WIDTH/2;
     var centery = WINDOW_HEIGHT/2;
-    var centerDiffX = Math.abs(centerx - mouseX);
-    var centerDiffY = Math.abs(centery - mouseY);
+    var centerDiffX = Math.abs(centerx - x);
+    var centerDiffY = Math.abs(centery - y);
     var r = createVector(centerDiffX, centerDiffY).mag();
     myCanvas.drawCircle(centerx, centery, r);
   }
@@ -725,7 +735,7 @@ function keyPressedGeneric(k, x, y)
   {
     console.log("Draw pattern", PATTERN_CURRENT_ID, "at", mx, my);
     var pattern = patterns[PATTERN_CURRENT_ID];
-    myCanvas.drawPattern(pattern, mouseX, mouseY);
+    myCanvas.drawPattern(pattern, x, y);
   }
   if (k == 'z')
   {
@@ -758,7 +768,7 @@ function keyPressedGeneric(k, x, y)
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
-  mouseClickedGeneric(mouseX, mouseY);
+  mouseClickedGeneric([mouseX, mouseY]);
 }
 
 function mouseMoved()
@@ -773,7 +783,7 @@ function mouseMoved()
 
 function mouseDragged()
 {
-  mouseClickedGeneric(mouseX, mouseY);
+  mouseClickedGeneric([mouseX, mouseY]);
 }
 
 function mouseWheel(event)
@@ -785,7 +795,7 @@ function mouseWheel(event)
 
 function keyPressed()
 {
-  keyPressedGeneric(key, mouseX, mouseY);
+  keyPressedGeneric([key, mouseX, mouseY]);
 }
 
 function keyReleased()
@@ -815,6 +825,9 @@ function setup()
   myCanvas = new Canvas();
 
   autoInput = new AutoInput(AUTO_INPUT_LIST_FRAME, mouseClickedGeneric, keyPressedGeneric);
+  autoInput.setCallbackFunction("mouse", mouseClickedGeneric);
+  autoInput.setCallbackFunction("key", keyPressedGeneric);
+  autoInput.setCallbackFunction("mousekey", keyPressedGeneric);
   autoInput.setMode("frame");
   autoInput.setOverallLoopEnabled(false);
   if (AUTO_INPUT_ENABLED)
