@@ -824,7 +824,7 @@ function setup()
   smooth(8);
   myCanvas = new Canvas();
 
-  autoInput = new AutoInput(AUTO_INPUT_LIST_FRAME, mouseClickedGeneric, keyPressedGeneric);
+  autoInput = new AutoInput(AUTO_INPUT_LIST_FRAME);
   autoInput.setCallbackFunction("mouse", mouseClickedGeneric);
   autoInput.setCallbackFunction("key", keyPressedGeneric);
   autoInput.setCallbackFunction("mousekey", keyPressedGeneric);
