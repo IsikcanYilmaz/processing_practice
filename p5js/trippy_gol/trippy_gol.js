@@ -48,7 +48,7 @@ var DEFAULT_IQ_COLOR_PALETTE = 10;//13;
 var IQ_REVERSE_SPECTRUM = true;
 
 var STROKE_WEIGHT = 0;
-var STROKE_COLOR = [R_MAX, G_MAX, B_MAX];
+var STROKE_COLOR = [0,0,0]; //[R_MAX, G_MAX, B_MAX];
 
 var H_DEFAULT = 0;
 var S_DEFAULT = IQ_COLOR_SCHEME ? 0 : 100;
@@ -58,10 +58,10 @@ var H_ALIVE = 0;
 var S_ALIVE = 0;
 var V_ALIVE = 100;
 
-var H_DELTA = 2;
+var H_DELTA = 0;
 var H_DECAY = 0.0;
-var S_DECAY = 0.0; //0.25;
-var V_DECAY = 10;
+var S_DECAY = 0.25; //0.25;
+var V_DECAY = 0.25;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var MAX_UPDATE_PER_SECOND = 50;
@@ -104,9 +104,10 @@ var AUTO_INPUT_ENABLED = false;
                             //];
 
 var AUTO_INPUT_LIST_FRAME = [
-                            [0, "key", "C", 70+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
+                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
                             [0, "loop", "begin", 999],
-                            [20, "key", "C", 70+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+                            //[30, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+                            [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
                             [20, "key", "z"], [20, "key", "z"], [20, "key", "z"], 
                             [1, "loop", "end"], 
                             ];
@@ -737,7 +738,7 @@ function keyPressedGeneric(arr)
     var pattern = patterns[PATTERN_CURRENT_ID];
     myCanvas.drawPattern(pattern, x, y);
   }
-  if (k == 'z')
+  if (k == 'z' || k == 'Z')
   {
     myCanvas.board.speedImpulse.reset();
   }
