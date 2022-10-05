@@ -44,7 +44,7 @@ var IQ_COLOR_SCHEME = true;
 var COLOR_MODE_RGB = true;
 
 var DEFAULT_IQ_NUMGENS = 50;
-var DEFAULT_IQ_COLOR_PALETTE = 10;//13;
+var DEFAULT_IQ_COLOR_PALETTE = 15;//13;
 var IQ_REVERSE_SPECTRUM = true;
 
 var STROKE_WEIGHT = 0;
@@ -72,14 +72,14 @@ var MOUSE_WHEEL_SMOOTHING_COEFF = 0.001;
 var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
 var SAVE_FRAMES = false;
-var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
+var SAVE_NUM_FRAMES = 30 * 120;
 
 var PATTERN_PREVIEW = false;
 var PATTERN_CURRENT_ID = 0;
 var PATTERN_SHADOW_MODE = false;
 var PATTERN_SHADOW_COLOR = [0, 0xf, 0xff];
 
-var FRAME_LIMITING = false;
+var FRAME_LIMITING = true;
 var FRAME_PER_SECOND = 60;
 if (SAVE_FRAMES)
 {
@@ -95,7 +95,6 @@ var DEBUG_PALETTE = false;
 
 var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
-var AUTO_INPUT_ENABLED = false;
 //var AUTO_INPUT_LIST_FRAME = [
                             //[0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
                             //[0, "loop", "begin", 999],
@@ -108,10 +107,11 @@ var AUTO_INPUT_LIST_FRAME = [
                             [0, "loop", "begin", 999],
                             //[30, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
-                            [20, "key", "z"], [20, "key", "z"], [20, "key", "z"], 
+                            [22, "key", "z"], [22, "key", "z"], [22, "key", "z"], 
                             [1, "loop", "end"], 
                             ];
 
+var AUTO_INPUT_ENABLED = true;
 var MOBILE = false;
 if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)){
   MOBILE = true;
@@ -550,6 +550,10 @@ class Canvas
     {
       this.board.golColorGen.drawDebugPalette();
     }
+    if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
+    {
+      this.saveFrame();
+    }
   }
 
   drawDebugPanel()
@@ -710,6 +714,15 @@ function keyPressedGeneric(arr)
   {
     myCanvas.board.golColorGen.setColorPalette((myCanvas.board.golColorGen.getColorPalette() + 1) % KNOWN_NICE_PALETTES.length);
   }
+  if (k == "P")
+  {
+    var prev = myCanvas.board.golColorGen.getColorPalette() - 1;
+    if (prev < 0)
+    {
+      prev = KNOWN_NICE_PALETTES.length - 1;
+    }
+    myCanvas.board.golColorGen.setColorPalette(prev);
+  }
   if (k == 'o')
   {
     COLORED = !COLORED;
@@ -831,9 +844,10 @@ function setup()
   autoInput.setCallbackFunction("mousekey", keyPressedGeneric);
   autoInput.setMode("frame");
   autoInput.setOverallLoopEnabled(false);
-  if (AUTO_INPUT_ENABLED)
+  if (AUTO_INPUT_ENABLED || SAVE_FRAMES)
   {
     autoInput.start();
+    AUTO_INPUT_ENABLED = true;
   }
 }
 
