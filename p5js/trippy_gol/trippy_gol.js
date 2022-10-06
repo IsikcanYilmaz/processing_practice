@@ -104,9 +104,13 @@ var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 var AUTO_INPUT_LIST_FRAME = [
                             [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
-                            [0, "loop", "begin", 999],
-                            //[30, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+                            [0, "loop", "begin", 6], // 21 seconds
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+                            [21, "key", "z"], [21, "key", "z"], [21, "key", "z"], [21, "key", "z"],
+                            [1, "loop", "end"], 
+                            [0, "key", "o"], [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2],
+                            [0, "loop", "begin", 999], // 21 seconds
+                            [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [22, "key", "z"],
                             [22, "key", "z"], [22, "key", "z"], [22, "key", "z"], 
                             [1, "loop", "end"], 
                             ];
