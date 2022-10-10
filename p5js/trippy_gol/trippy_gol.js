@@ -108,7 +108,8 @@ var AUTO_INPUT_LIST_FRAME = [
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
                             [21, "key", "z"], [21, "key", "z"], [21, "key", "z"], [21, "key", "z"],
                             [1, "loop", "end"], 
-                            [0, "key", "o"], [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2],
+                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [21, "key", "z"], [21, "key", "z"],
+                            [0, "key", "o"], [21, "key", "z"], [21, "key", "z"],
                             [0, "loop", "begin", 999], // 21 seconds
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [22, "key", "z"],
                             [22, "key", "z"], [22, "key", "z"], [22, "key", "z"], 
@@ -123,6 +124,11 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
 }
 
 ////////////////////////
+
+function sleep(delay) {
+    var start = new Date().getTime();
+    while (new Date().getTime() < start + delay);
+}
 
 class GoLColorGen
 {
@@ -540,6 +546,7 @@ class Canvas
   constructor()
   {
     this.board = new GoLBoard();
+    this.frameId = 0;
   }
 
   updateCanvas()
@@ -550,6 +557,7 @@ class Canvas
   drawCanvas()
   {
     this.board.drawBoard();
+    this.frameId++;
     if (DEBUG_PALETTE)
     {
       this.board.golColorGen.drawDebugPalette();
@@ -557,6 +565,8 @@ class Canvas
     if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
     {
       this.saveFrame();
+      console.log("SAVED FRAME", this.frameId);
+      sleep(100);
     }
   }
 
