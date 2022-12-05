@@ -1,0 +1,318 @@
+var WINDOW_HEIGHT = 600;
+var WINDOW_WIDTH  = 600;
+
+var H_MAX = 360;
+var S_MAX = 100;
+var V_MAX = 100;
+
+var DEFAULT_BACKGROUND = [0, 0, 0];
+var DEFAULT_STROKE_COLOR = [250, 0, 100];
+
+var DEBUGVISUALS = false;
+
+var PI  = Math.PI;
+var TAU = Math.PI * 2;
+
+var PANEL_NUM_PIXELS_PER_SIDE = 4;
+var PIXEL_WIDTH = 50;
+
+////////////////////////
+
+var SAVE_FRAMES = false;
+var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
+
+var FRAME_LIMITING = false;
+var FRAME_PER_SECOND = 60;
+if (SAVE_FRAMES)
+{
+  FRAME_LIMITING = true;
+  FRAME_PER_SECOND = 15;
+}
+var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
+
+var TOGGLE_DEBUG_ALLOWED = false;
+var DEBUG_LINES = false;
+var DEBUG_FPS = false;
+var DEBUG_PAUSING = false;
+
+var BLACKOUTS_ENABLED = true;
+var DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT = 12;
+
+////////////////////////
+var DIR_NORTH = 0;
+var DIR_EAST  = 1;
+var DIR_SOUTH = 2;
+var DIR_WEST  = 3;
+var DIR_TOP   = 4;
+
+class Pixel
+{
+  constructor()
+  {
+    this.h = 0;
+    this.s = 0;
+    this.v = 0;
+    this.hsv = [this.h, this.s, this.v];
+  }
+
+  getHsv()
+  {
+    return this.hsv;
+  }
+
+  setHsv(h, s, v)
+  {
+    this.hsv = [h,s,v];
+  }
+}
+
+class Panel
+{
+  constructor(len, pos, x, y)
+  {
+    this.len = len;
+    this.numPixels = len*len;
+    this.pos = pos;
+    this.x = x;
+    this.y = y;
+    this.pixels = Array.from({ length: this.len }, () => Array.from({ length: this.len }, () => new Pixel()));
+    for (var x = 0; x < PANEL_NUM_PIXELS_PER_SIDE; x++)
+    {
+      for (var y = 0; y < PANEL_NUM_PIXELS_PER_SIDE; y++)
+      {
+        this.pixels[x][y].x = x;
+        this.pixels[x][y].y = y;
+        this.pixels[x][y].panel = this.pos;
+      }
+    }
+  }
+
+  isMouseIn(x, y)
+  {
+    if (x > this.x && x < this.x + (this.len * PIXEL_WIDTH) && y > this.y && y < (this.y + (this.len * PIXEL_WIDTH)))
+    {
+      return true;
+    }
+  }
+
+  transformCoords(x, y, pos)
+  {
+    var transX = x;
+    var transY = y;
+    switch(pos)
+    {
+      case DIR_NORTH:
+        {
+          transX = this.len - x - 1;
+          transY = y;
+          break;
+        }
+      case DIR_EAST:
+        {
+          transX = this.len - x - 1;
+          transY = this.len - y - 1;
+          break;
+        }
+      case DIR_TOP:
+      case DIR_SOUTH:
+        {
+          transX = x;
+          transY = this.len - y - 1;
+          break;
+        }
+      case DIR_WEST:
+        {
+          transX = x;
+          transY = this.len - y - 1;
+          break;
+        }
+      default:
+        {
+        }
+    }
+    return [transX, transY];
+  }
+
+  drawPanel()
+  {
+    stroke(0, 0, 100);
+    rect(this.x, this.y, PIXEL_WIDTH * this.len, PIXEL_WIDTH * this.len);
+    for (var x = 0; x < this.len; x++)
+    {
+      for (var y = 0; y < this.len; y++)
+      {
+        var transX = x;
+        var transY = y;
+        var [transX, transY] = this.transformCoords(x, y, this.pos);
+        var p = this.pixels[x][y];
+        var pCol = p.getHsv();
+        fill(pCol[0], pCol[1], pCol[2]);
+        rect(this.x + (transX * PIXEL_WIDTH), this.y + (transY * PIXEL_WIDTH), PIXEL_WIDTH, PIXEL_WIDTH);
+      }
+    }
+  }
+
+  getPixel(x, y)
+  {
+    console.log(x, y);
+    return this.pixels[x][y];
+  }
+
+  getPixelFromGlobalCoords(x, y)
+  {
+    if (!this.isMouseIn(x, y))
+    {
+      return -1;
+    }
+    else
+    {
+      var rawX = int((mouseX - this.x) / PIXEL_WIDTH);
+      var rawY = int((mouseY - this.y) / PIXEL_WIDTH);
+      var [transX, transY] = this.transformCoords(rawX, rawY, this.pos);
+      console.log("PANEL ", this.pos, "LOCAL X", transX, "LOCAL Y", transY);
+      return this.getPixel(transX, transY);
+    }
+  }
+}
+
+class Canvas 
+{
+  constructor()
+  {
+    this.nPanel = new Panel(PANEL_NUM_PIXELS_PER_SIDE, DIR_NORTH, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH, 0);
+    this.ePanel = new Panel(PANEL_NUM_PIXELS_PER_SIDE, DIR_EAST, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH * 2, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH);
+    this.sPanel = new Panel(PANEL_NUM_PIXELS_PER_SIDE, DIR_SOUTH, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH * 2);
+    this.wPanel = new Panel(PANEL_NUM_PIXELS_PER_SIDE, DIR_WEST, 0, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH);
+    this.tPanel = new Panel(PANEL_NUM_PIXELS_PER_SIDE, DIR_TOP, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH);
+    this.panels = [this.nPanel, this.ePanel, this.sPanel, this.wPanel, this.tPanel];
+
+    this.nPanel.pixels[0][0].setHsv(100,100,100);
+    this.ePanel.pixels[0][0].setHsv(100,100,100);
+    this.sPanel.pixels[0][0].setHsv(100,100,100);
+    this.wPanel.pixels[0][0].setHsv(100,100,100);
+    this.tPanel.pixels[0][0].setHsv(100,100,100);
+  }
+
+  getPanel(dir)
+  {
+    return this.panels[dir];
+  }
+
+  updateCanvas()
+  {
+  }
+
+  drawCanvas()
+  {
+    for (var i = 0; i < this.panels.length; i++)
+    {
+      this.panels[i].drawPanel();
+    }
+  }
+
+  drawDebugPanel()
+  {
+  }
+
+  saveFrame()
+  {
+  }
+}
+
+////////////////////////
+
+function mouseMoved()
+{
+}
+
+function mouseWheel()
+{
+}
+
+function mouseClicked()
+{
+  console.log("MOUSE CLICKED", mouseX, mouseY);
+
+  // find which panel
+  var pan = 0xff;
+  for (var i = 0; i < this.myCanvas.panels.length; i++)
+  {
+    if (myCanvas.panels[i].isMouseIn(mouseX, mouseY))
+    {
+      pan = i;
+      break;
+    }
+  }
+
+  if (pan == 0xff)
+  {
+    return;
+  }
+
+  // Find which pixel (raw coords)
+  var p = myCanvas.panels[pan].getPixelFromGlobalCoords(mouseX, mouseY);
+
+  console.log(p);
+  p.setHsv(30, 30, 30);
+
+}
+
+function keyPressed()
+{
+  console.log("KEY PRESSED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = false;
+  }
+}
+
+function keyReleased()
+{
+  console.log("KEY RELEASED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = true;
+  }
+  if (key == 'd' && TOGGLE_DEBUG_ALLOWED)
+  {
+    background(0, 0, 0);
+    DEBUG_LINES = !DEBUG_LINES;
+    DEBUG_FPS = !DEBUG_FPS;
+  }
+}
+
+
+////////////////////////
+
+myCanvas = new Canvas();
+p5jsCanvas = undefined;
+function setup()
+{
+  p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
+  colorMode(HSB, H_MAX, S_MAX, V_MAX);
+  background(DEFAULT_BACKGROUND);
+  textSize(12);
+  smooth(8);
+}
+
+var lastFrameTs = 0;
+var fps = 0;
+var timeSinceLastFrameMsMs = 0;
+function draw()
+{
+  var frameTs = Date.now();
+  if (lastFrameTs != 0)
+  {
+    timeSinceLastFrameMsMs = frameTs - lastFrameTs;
+    fps = int(1000 / timeSinceLastFrameMsMs);
+
+    if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
+    {
+      return;
+    }
+  }
+  lastFrameTs = frameTs;
+  myCanvas.updateCanvas();
+  myCanvas.drawCanvas();
+  myCanvas.drawDebugPanel();
+}
