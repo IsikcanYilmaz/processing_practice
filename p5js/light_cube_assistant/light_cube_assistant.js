@@ -38,6 +38,71 @@ var DEBUG_PAUSING = false;
 var BLACKOUTS_ENABLED = true;
 var DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT = 12;
 
+// UTILS ///////////////
+// Takes r,g,b in 0-255
+var CG_HMAX = 360;
+var CG_SMAX = 100;
+var CG_VMAX = 100;
+var CG_RMAX = 255;
+var CG_GMAX = 255;
+var CG_BMAX = 255;
+
+function rgbToHsv(rgb)
+{
+  r = rgb[0];
+  g = rgb[1];
+  b = rgb[2];
+  var h;
+  var s;
+  var v;
+  var maxColor = Math.max(r, g, b);
+  var minColor = Math.min(r, g, b);
+  var delta = maxColor - minColor;
+  // Calculate hue
+  // To simplify the formula, we use 0-6 range.
+  if(delta == 0) {
+    h = 0;
+  }
+  else if(r == maxColor) {
+    h = (6 + (g - b) / delta) % 6;
+  }
+  else if(g == maxColor) {
+    h = 2 + (b - r) / delta;
+  }
+  else if(b == maxColor) {
+    h = 4 + (r - g) / delta;
+  }
+  else {
+    h = 0;
+  }
+  // Then adjust the range to be 0-1
+  h = h/6;
+  // Calculate saturation
+  if(maxColor != 0) {
+    s = delta / maxColor;
+  }
+  else {
+    s = 0;
+  }
+  // Calculate value
+  v = maxColor / 255;
+  return [h * CG_HMAX, s * CG_SMAX, v * CG_VMAX];
+}
+
+function hexToRgb(hex) {
+  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+
+// GUI GLOBALS /////////
+var FILL_COLOR = "#6541d6";
+
+
 ////////////////////////
 var DIR_NORTH = 0;
 var DIR_EAST  = 1;
@@ -111,6 +176,9 @@ class Panel
         {
           transX = this.len - x - 1;
           transY = this.len - y - 1;
+          var tmp = transX;
+          transX = transY;
+          transY = tmp;
           break;
         }
       case DIR_TOP:
@@ -123,7 +191,10 @@ class Panel
       case DIR_WEST:
         {
           transX = x;
-          transY = this.len - y - 1;
+          transY = y;
+          var tmp = transX;
+          transX = transY;
+          transY = tmp;
           break;
         }
       default:
@@ -253,8 +324,15 @@ function mouseClicked()
   var p = myCanvas.panels[pan].getPixelFromGlobalCoords(mouseX, mouseY);
 
   console.log(p);
-  p.setHsv(30, 30, 30);
+  console.log(hexToRgb(FILL_COLOR));
+  var rgb = hexToRgb(FILL_COLOR);
+  var hsv = rgbToHsv([rgb.r, rgb.g, rgb.b]);
+  p.setHsv(hsv);
+}
 
+function mouseDragged()
+{
+  mouseClicked();
 }
 
 function keyPressed()
@@ -286,6 +364,9 @@ function keyReleased()
 
 myCanvas = new Canvas();
 p5jsCanvas = undefined;
+gui = undefined;
+
+
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -293,6 +374,10 @@ function setup()
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
+
+  gui1 = createGui();
+  sliderRange(0, 100, 1);
+  gui1.addGlobals("FILL_COLOR");
 }
 
 var lastFrameTs = 0;
