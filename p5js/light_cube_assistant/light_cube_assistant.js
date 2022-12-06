@@ -257,11 +257,11 @@ class Canvas
     this.tPanel = new Panel(PANEL_NUM_PIXELS_PER_SIDE, DIR_TOP, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH, PANEL_NUM_PIXELS_PER_SIDE * PIXEL_WIDTH);
     this.panels = [this.nPanel, this.ePanel, this.sPanel, this.wPanel, this.tPanel];
 
-    this.nPanel.pixels[0][0].setHsv(100,100,100);
-    this.ePanel.pixels[0][0].setHsv(100,100,100);
-    this.sPanel.pixels[0][0].setHsv(100,100,100);
-    this.wPanel.pixels[0][0].setHsv(100,100,100);
-    this.tPanel.pixels[0][0].setHsv(100,100,100);
+    //this.nPanel.pixels[0][0].setHsv(100,100,100);
+    //this.ePanel.pixels[0][0].setHsv(100,100,100);
+    //this.sPanel.pixels[0][0].setHsv(100,100,100);
+    //this.wPanel.pixels[0][0].setHsv(100,100,100);
+    //this.tPanel.pixels[0][0].setHsv(100,100,100);
   }
 
   getPanel(dir)
