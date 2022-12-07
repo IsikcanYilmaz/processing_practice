@@ -109,6 +109,9 @@ var DIR_EAST  = 1;
 var DIR_SOUTH = 2;
 var DIR_WEST  = 3;
 var DIR_TOP   = 4;
+var panels = [DIR_NORTH, DIR_EAST, DIR_SOUTH, DIR_WEST, DIR_TOP];
+var panelChars = ['n', 'e', 's', 'w', 't'];
+var panelCharsHack = ['e', 'n', 'w', 's', 't'];
 
 class Pixel
 {
@@ -241,7 +244,7 @@ class Panel
       var rawY = int((mouseY - this.y) / PIXEL_WIDTH);
       var [transX, transY] = this.transformCoords(rawX, rawY, this.pos);
       console.log("PANEL ", this.pos, "LOCAL X", transX, "LOCAL Y", transY);
-      return this.getPixel(transX, transY);
+      return [this.getPixel(transX, transY), transX, transY];
     }
   }
 }
@@ -321,13 +324,18 @@ function mouseClicked()
   }
 
   // Find which pixel (raw coords)
-  var p = myCanvas.panels[pan].getPixelFromGlobalCoords(mouseX, mouseY);
+  var p, transX, transY;
+  [p, transX, transY] = myCanvas.panels[pan].getPixelFromGlobalCoords(mouseX, mouseY);
 
   console.log(p);
   console.log(hexToRgb(FILL_COLOR));
   var rgb = hexToRgb(FILL_COLOR);
   var hsv = rgbToHsv([rgb.r, rgb.g, rgb.b]);
   p.setHsv(hsv);
+
+  //
+  var cmd = "set_pixel " + panelCharsHack[pan] + " " + transX + " " + transY + " " + rgb.r + " " + rgb.g + " " + rgb.b;
+  writeToStream(cmd);
 }
 
 function mouseDragged()
@@ -359,13 +367,17 @@ function keyReleased()
   }
 }
 
+function reset()
+{
+
+}
+
 
 ////////////////////////
 
 myCanvas = new Canvas();
 p5jsCanvas = undefined;
 gui = undefined;
-
 
 function setup()
 {
