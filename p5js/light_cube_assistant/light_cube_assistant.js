@@ -303,6 +303,9 @@ function mouseWheel()
 {
 }
 
+var lastPanel = 0xff;
+var lastTransX = 0xff;
+var lastTransY = 0xff;
 function mouseClicked()
 {
   console.log("MOUSE CLICKED", mouseX, mouseY);
@@ -326,6 +329,14 @@ function mouseClicked()
   // Find which pixel (raw coords)
   var p, transX, transY;
   [p, transX, transY] = myCanvas.panels[pan].getPixelFromGlobalCoords(mouseX, mouseY);
+
+  if (pan == lastPanel && transX == lastTransX && transY == lastTransY)
+  {
+    return;
+  }
+  lastPanel = pan;
+  lastTransX = transX;
+  lastTransY = transY;
 
   console.log(p);
   console.log(hexToRgb(FILL_COLOR));

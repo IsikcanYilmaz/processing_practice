@@ -1,2 +1,0 @@
-# the "output-%04d.png" are the frames you store somewhere. the 30 is the fps
-ffmpeg -r 60 -i bubbles-%05d.jpg -vcodec libx264 -pix_fmt yuv420p -y movie_60fps.mp4

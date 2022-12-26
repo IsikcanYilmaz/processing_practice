@@ -73,6 +73,7 @@ var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
 var SAVE_FRAMES = false;
 var SAVE_NUM_FRAMES = 30 * 120;
+var SAVE_FRAMES_SLEEP = 10;
 
 var PATTERN_PREVIEW = false;
 var PATTERN_CURRENT_ID = 0;
@@ -81,11 +82,11 @@ var PATTERN_SHADOW_COLOR = [0, 0xf, 0xff];
 
 var FRAME_LIMITING = true;
 var FRAME_PER_SECOND = 60;
-if (SAVE_FRAMES)
-{
-  FRAME_LIMITING = true;
-  FRAME_PER_SECOND = 15;
-}
+//if (SAVE_FRAMES)
+//{
+  //FRAME_LIMITING = true;
+  //FRAME_PER_SECOND = 15;
+//}
 var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
 
 var TOGGLE_DEBUG_ALLOWED = false;
@@ -101,19 +102,23 @@ var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
                             //[20, "key", "c"], [20, "key", "z"],
                             //[1, "loop", "end"], 
                             //];
-
+var PULSE_PERIOD = 33;
 var AUTO_INPUT_LIST_FRAME = [
                             [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
+
                             [0, "loop", "begin", 6], // 21 seconds
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
-                            [21, "key", "z"], [21, "key", "z"], [21, "key", "z"], [21, "key", "z"],
+                            [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"],
                             [1, "loop", "end"], 
-                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [21, "key", "z"], [21, "key", "z"],
-                            [0, "key", "o"], [21, "key", "z"], [21, "key", "z"],
+
+                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"],
+                            [0, "key", "o"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"],
+
                             [0, "loop", "begin", 999], // 21 seconds
-                            [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [22, "key", "z"],
-                            [22, "key", "z"], [22, "key", "z"], [22, "key", "z"], 
+                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "z"],
+                            [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], 
                             [1, "loop", "end"], 
+
                             ];
 
 var AUTO_INPUT_ENABLED = true;
@@ -247,7 +252,7 @@ class GoLBoard
     this.playing = false;
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
-    this.speedImpulse = new Impulse(1/30, 0.1);
+    this.speedImpulse = new Impulse(1/60, 0.15);
     this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
   }
@@ -398,7 +403,8 @@ class GoLBoard
     this.speedImpulse.update();
 
     // Pipe from oscillators/signals to destinations
-    this.setFrameFrequency(MAX_UPDATE_PER_SECOND * this.speedImpulse.getVal());
+    //this.setFrameFrequency(MAX_UPDATE_PER_SECOND * this.speedImpulse.getVal());
+    this.setFrameFrequency(FRAME_PER_SECOND * this.speedImpulse.getVal());
 
     // Frame per second limiting
     var now = Date.now();
@@ -562,11 +568,20 @@ class Canvas
     {
       this.board.golColorGen.drawDebugPalette();
     }
-    if (SAVE_FRAMES && this.frameId < SAVE_NUM_FRAMES)
+    if (SAVE_FRAMES && this.frameId === 1)
     {
-      this.saveFrame();
-      console.log("SAVED FRAME", this.frameId);
-      sleep(100);
+      //this.saveFrame();
+      //sleep(SAVE_FRAMES_SLEEP);
+      const capture = P5Capture.getInstance();
+      capture.start({
+        format: "mp4",
+        framerate: 30,
+      });
+    }
+    if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES)
+    {
+      const capture = P5Capture.getInstance();
+      capture.stop();
     }
   }
 
@@ -585,6 +600,7 @@ class Canvas
   {
     var filename = "trippy_gol-" + str(this.frameId).padStart(5, "0");
     saveCanvas(p5jsCanvas, filename, "jpg");
+    console.log("SAVED FRAME", this.frameId);
   }
 
   mouseInput(x, y)
@@ -836,6 +852,15 @@ function keyReleased()
 myCanvas = undefined; 
 p5jsCanvas = undefined;
 autoInput = undefined;
+//if (SAVE_FRAMES)
+//{
+  //P5Capture.setDefaultOptions({
+    //format: "mp4",
+    //framerate: 30,
+    //quality: 1,
+    //width: WINDOW_WIDTH,
+  //});
+//}
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
