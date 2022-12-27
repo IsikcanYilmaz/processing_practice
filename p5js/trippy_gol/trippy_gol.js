@@ -15,8 +15,8 @@ var TAU = Math.PI * 2;
 
 ////////////////////////
 
-var WINDOW_HEIGHT = 800;
-var WINDOW_WIDTH  = 800;
+var WINDOW_HEIGHT = 500;
+var WINDOW_WIDTH  = 500;
 var GRID_CELLS_Y = 50;
 var GRID_CELLS_X = 50;
 
@@ -71,7 +71,7 @@ var UPDATE_PER_SECOND_MIN = 0.5;
 var MOUSE_WHEEL_SMOOTHING_COEFF = 0.001;
 var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
-var SAVE_FRAMES = false;
+var SAVE_FRAMES = true;
 var SAVE_NUM_FRAMES = 30 * 120;
 var SAVE_FRAMES_SLEEP = 10;
 
@@ -80,7 +80,7 @@ var PATTERN_CURRENT_ID = 0;
 var PATTERN_SHADOW_MODE = false;
 var PATTERN_SHADOW_COLOR = [0, 0xf, 0xff];
 
-var FRAME_LIMITING = true;
+var FRAME_LIMITING = false;
 var FRAME_PER_SECOND = 60;
 //if (SAVE_FRAMES)
 //{
@@ -96,29 +96,24 @@ var DEBUG_PALETTE = false;
 
 var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
-//var AUTO_INPUT_LIST_FRAME = [
-                            //[0, "key", "c"], [0, "key", "o"], [0, "key", " "], 
-                            //[0, "loop", "begin", 999],
-                            //[20, "key", "c"], [20, "key", "z"],
-                            //[1, "loop", "end"], 
-                            //];
-var PULSE_PERIOD = 33;
+// sync to amo bishop roden by boards of canada 
+// palette no 9 also seems nice
+var PULSE_PERIOD = 24; 
 var AUTO_INPUT_LIST_FRAME = [
                             [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
 
-                            [0, "loop", "begin", 6], // 21 seconds
+                            [0, "loop", "begin", 5], // 21 seconds
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
-                            [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"],
+                            [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
                             [1, "loop", "end"], 
 
-                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"],
-                            [0, "key", "o"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"],
+                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
+                            [0, "key", "o"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
 
                             [0, "loop", "begin", 999], // 21 seconds
-                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "z"],
-                            [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], [PULSE_PERIOD, "key", "z"], 
+                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"],
+                            [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
                             [1, "loop", "end"], 
-
                             ];
 
 var AUTO_INPUT_ENABLED = true;
@@ -255,6 +250,12 @@ class GoLBoard
     this.speedImpulse = new Impulse(1/60, 0.15);
     this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
+    this.numCellChanges = 0;
+  }
+
+  getNumCellChanges()
+  {
+    return this.numCellChanges;
   }
 
   setFrameFrequency(hz)
@@ -394,6 +395,7 @@ class GoLBoard
 
   updateBoard()
   {
+    console.log("UPDATE BEGUN");
     if (!this.playing)
     {
       return;
@@ -417,6 +419,7 @@ class GoLBoard
       this.lastUpdateTimestamp = now;
     }
 
+    this.numCellChanges = 0;
     for (var y = 0; y < this.currentFrame.length; y++)
     {
       for (var x = 0; x < this.currentFrame[y].length; x++)
@@ -452,6 +455,11 @@ class GoLBoard
           cellLives = true;
         }
 
+        if ((currentValue > 0 && !cellLives) || (currentValue == 0 && cellLives))
+        {
+          this.numCellChanges++;
+        }
+
         this.nextFrame[y][x] = (cellLives ? 1 : 0);
       }
     }
@@ -470,6 +478,7 @@ class GoLBoard
       var newv = this.color[2];
       this.color = [newh, news, newv];
     }
+    console.log("UPDATE ENDED");
   }
 
   drawBoard()
@@ -553,6 +562,7 @@ class Canvas
   {
     this.board = new GoLBoard();
     this.frameId = 0;
+    this.recording = false;
   }
 
   updateCanvas()
@@ -563,12 +573,11 @@ class Canvas
   drawCanvas()
   {
     this.board.drawBoard();
-    this.frameId++;
     if (DEBUG_PALETTE)
     {
       this.board.golColorGen.drawDebugPalette();
     }
-    if (SAVE_FRAMES && this.frameId === 1)
+    if (SAVE_FRAMES && this.frameId === 0)
     {
       //this.saveFrame();
       //sleep(SAVE_FRAMES_SLEEP);
@@ -577,11 +586,14 @@ class Canvas
         format: "mp4",
         framerate: 30,
       });
+      this.recording = true;
     }
-    if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES)
+    this.frameId++;
+    if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES && this.recording)
     {
       const capture = P5Capture.getInstance();
       capture.stop();
+      this.recording = false;
     }
   }
 
@@ -753,6 +765,10 @@ function keyPressedGeneric(arr)
     }
     myCanvas.board.golColorGen.setColorPalette(prev);
   }
+  if (k == "l" || k == "L")
+  {
+    myCanvas.board.golColorGen.setColorPalette(x);
+  }
   if (k == 'o')
   {
     COLORED = !COLORED;
@@ -784,6 +800,19 @@ function keyPressedGeneric(arr)
   if (k == 'z' || k == 'Z')
   {
     myCanvas.board.speedImpulse.reset();
+  }
+  if (k == 'm' || k == 'M')
+  {
+    var cellChanges = myCanvas.board.getNumCellChanges();
+    console.log("JON CELLCHANGES", cellChanges);
+    if (cellChanges < 20)
+    {
+      keyPressedGeneric('c');
+    }
+    else
+    {
+      keyPressedGeneric('z');
+    }
   }
   if (k == '+')
   {
