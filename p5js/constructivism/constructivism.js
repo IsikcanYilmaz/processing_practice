@@ -19,6 +19,17 @@ var SAVE_FRAMES = false;
 
 ////////////////////////
 
+class Shape
+{
+  constructor()
+  {
+  }
+
+  drawShape()
+  {
+  }
+}
+
 class Canvas 
 {
   constructor()
