@@ -98,14 +98,16 @@ var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 // sync to amo bishop roden by boards of canada 
 // palette no 9 also seems nice
-var PULSE_PERIOD = 24; 
+var PULSE_PERIOD = 25; 
 var AUTO_INPUT_LIST_FRAME = [
-                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
+                            [PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
 
-                            [0, "loop", "begin", 5], // 21 seconds
+                            [0, "loop", "begin", 5], 
                             [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
                             [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
                             [1, "loop", "end"], 
+
+                            [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
 
                             [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
                             [0, "key", "o"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
