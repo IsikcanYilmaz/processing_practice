@@ -16,6 +16,24 @@ var TAU = Math.PI * 2;
 ////////////////////////
 
 var SAVE_FRAMES = false;
+var SAVE_FRAMES_BLACKOUT_THRESHOLD = 1;
+
+var FRAME_LIMITING = false;
+var FRAME_PER_SECOND = 60;
+if (SAVE_FRAMES)
+{
+  FRAME_LIMITING = true;
+  FRAME_PER_SECOND = 15;
+}
+var FRAME_PERIOD_MS = 1000 / FRAME_PER_SECOND;
+
+var TOGGLE_DEBUG_ALLOWED = false;
+var DEBUG_LINES = false;
+var DEBUG_FPS = false;
+var DEBUG_PAUSING = false;
+
+var BLACKOUTS_ENABLED = true;
+var DEFAULT_NUM_HALF_PERIODS_TIL_BLACKING_OUT = 12;
 
 ////////////////////////
 
@@ -43,18 +61,6 @@ class Canvas
 }
 
 ////////////////////////
-// I/O
-// Mouse
-function mouseClickedGeneric(arr)
-{
-  var [x, y] = arr;
-  myCanvas.mouseInput(x, y);
-}
-
-function mouseDragged()
-{
-  mouseClickedGeneric([mouseX, mouseY]);
-}
 
 function mouseMoved()
 {
@@ -64,23 +70,28 @@ function mouseWheel()
 {
 }
 
-// Keyboard
-function keyPressedGeneric(arr)
-{
-  var [k, x, y] = arr;
-  var mx = x || 0;
-  var my = y || 0;
-  console.log("KEY PRESSED", k, "WITH", x, y, arr);
-}
-
 function keyPressed()
 {
-  keyPressedGeneric([key, mouseX, mouseY]);
+  console.log("KEY PRESSED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = false;
+  }
 }
 
 function keyReleased()
 {
   console.log("KEY RELEASED", key);
+  if (key == ' ')
+  {
+    myCanvas.paused = true;
+  }
+  if (key == 'd' && TOGGLE_DEBUG_ALLOWED)
+  {
+    background(0, 0, 0);
+    DEBUG_LINES = !DEBUG_LINES;
+    DEBUG_FPS = !DEBUG_FPS;
+  }
 }
 
 
