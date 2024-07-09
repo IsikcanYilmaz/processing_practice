@@ -44,7 +44,7 @@ var IQ_COLOR_SCHEME = true;
 var COLOR_MODE_RGB = true;
 
 var DEFAULT_IQ_NUMGENS = 50;
-var DEFAULT_IQ_COLOR_PALETTE = 15;//13;
+var DEFAULT_IQ_COLOR_PALETTE = 10;//15;//13;
 var IQ_REVERSE_SPECTRUM = true;
 
 var STROKE_WEIGHT = 0;
@@ -58,10 +58,15 @@ var H_ALIVE = 0;
 var S_ALIVE = 0;
 var V_ALIVE = 100;
 
-var H_DELTA = 0;
+// var H_DELTA = 0;
+// var H_DECAY = 0.0;
+// var S_DECAY = 0.25; //0.25;
+// var V_DECAY = 0.25;
+
+var H_DELTA = 2;
 var H_DECAY = 0.0;
-var S_DECAY = 0.25; //0.25;
-var V_DECAY = 0.25;
+var S_DECAY = 0.0; //0.25;
+var V_DECAY = 2.5;
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var MAX_UPDATE_PER_SECOND = 50;
@@ -122,7 +127,7 @@ var AUTO_INPUT_LIST_FRAME = [
                             ];
 
 AUTO_INPUT_LIST_FRAME = [ // version 2
-												[0, "key", "o"], // Disable color
+												// [0, "key", "o"], // Disable color
 												[0, "key", " "], // Unpause 
 												[PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], // Initial circle 
 
@@ -131,7 +136,7 @@ AUTO_INPUT_LIST_FRAME = [ // version 2
 												[PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
 												[1, "loop", "end"],
 
-												[0, "key", "o"], // Enable color
+												// [0, "key", "o"], // Enable color
 
 												[0, "loop", "begin", 10],  // Loop 10 times like that
 												[0, "key", "c", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
