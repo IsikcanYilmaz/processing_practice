@@ -128,7 +128,7 @@ class AutoInput
 
   fire(entry)
   {
-    console.log("FIRING ENTRY", entry, "CALLBACK FN", this.callbacks[entry[1]]);
+    // console.log("FIRING ENTRY", entry, "CALLBACK FN", this.callbacks[entry[1]]);
     if (entry[1] == "loop")
     {
       if (entry[2] == "begin")

@@ -72,7 +72,8 @@ var MOUSE_WHEEL_SMOOTHING_COEFF = 0.001;
 var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
 var SAVE_FRAMES = true;
-var SAVE_NUM_FRAMES = 30 * 120;
+var SAVE_FRAMES_NAIVE = true;
+var SAVE_NUM_FRAMES = 30 * 45;
 var SAVE_FRAMES_SLEEP = 10;
 
 var PATTERN_PREVIEW = false;
@@ -81,7 +82,7 @@ var PATTERN_SHADOW_MODE = false;
 var PATTERN_SHADOW_COLOR = [0, 0xf, 0xff];
 
 var FRAME_LIMITING = false;
-var FRAME_PER_SECOND = 60;
+var FRAME_PER_SECOND = 30;
 //if (SAVE_FRAMES)
 //{
   //FRAME_LIMITING = true;
@@ -94,29 +95,50 @@ var DEBUG_FPS = false;
 var DEBUG_PAUSING = false;
 var DEBUG_PALETTE = false;
 
+var SLEEP_COUNTER = true;
+
 var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 // sync to amo bishop roden by boards of canada 
 // palette no 9 also seems nice
-var PULSE_PERIOD = 25; 
+var PULSE_PERIOD = 24; 
 var AUTO_INPUT_LIST_FRAME = [
-                            [PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
-
-                            [0, "loop", "begin", 5], 
-                            [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
-                            [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
-                            [1, "loop", "end"], 
-
-                            [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
-
-                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
-                            [0, "key", "o"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
-
-                            [0, "loop", "begin", 999], // 21 seconds
-                            [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"],
-                            [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
-                            [1, "loop", "end"], 
+                            // [PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
+                            //
+                            // [0, "loop", "begin", 5], 
+                            // [0, "key", "C", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+                            // [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
+                            // [1, "loop", "end"], 
+                            //
+                            // [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
+                            //
+                            // [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
+                            // [0, "key", "o"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
+                            //
+                            // [0, "loop", "begin", 999], // 21 seconds
+                            // [0, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [PULSE_PERIOD, "key", "m"],
+                            // [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
+                            // [1, "loop", "end"], 
                             ];
+
+AUTO_INPUT_LIST_FRAME = [ // version 2
+												[0, "key", "o"], // Disable color
+												[0, "key", " "], // Unpause 
+												[PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], // Initial circle 
+
+												[0, "loop", "begin", 30],  // Loop 10 times like that
+												[0, "key", "c", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+												[PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
+												[1, "loop", "end"],
+
+												[0, "key", "o"], // Enable color
+
+												[0, "loop", "begin", 10],  // Loop 10 times like that
+												[0, "key", "c", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
+												[PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"],
+												[1, "loop", "end"],
+
+];
 
 var AUTO_INPUT_ENABLED = true;
 var MOBILE = false;
@@ -249,10 +271,11 @@ class GoLBoard
     this.playing = false;
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
-    this.speedImpulse = new Impulse(1/60, 0.15);
+    this.speedImpulse = new Impulse(1/15, 0.05);
     this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
     this.numCellChanges = 0;
+		this.updateSleepCtr = 0;
   }
 
   getNumCellChanges()
@@ -340,6 +363,11 @@ class GoLBoard
     this.shadowFrame = Array.from({ length: GRID_CELLS_X }, () => Array.from({ length: GRID_CELLS_Y }, () => 0));
   }
 
+	resetSleepCtr()
+	{
+		this.updateSleepCtr = 0;
+	}
+
   getCell(x, y)
   {
     return this.currentFrame[y][x];
@@ -397,7 +425,7 @@ class GoLBoard
 
   updateBoard()
   {
-    console.log("UPDATE BEGUN");
+    // console.log("UPDATE BEGUN");
     if (!this.playing)
     {
       return;
@@ -408,18 +436,38 @@ class GoLBoard
 
     // Pipe from oscillators/signals to destinations
     //this.setFrameFrequency(MAX_UPDATE_PER_SECOND * this.speedImpulse.getVal());
-    this.setFrameFrequency(FRAME_PER_SECOND * this.speedImpulse.getVal());
+		var fps_multiplier = this.speedImpulse.getVal();
+    this.setFrameFrequency(FRAME_PER_SECOND * fps_multiplier);
 
-    // Frame per second limiting
-    var now = Date.now();
-    if (now - this.lastUpdateTimestamp < this.framePeriodMs)
-    {
-      return;
-    }
-    else
-    {
-      this.lastUpdateTimestamp = now;
-    }
+    // // Frame per second limiting
+		// // THIS WAS DOING FPS LIMITING BY CHECKING THE TIME
+		// // I'M DITCHING THIS SOLUTION ALTOGETHER
+    // var now = Date.now();
+    // if (now - this.lastUpdateTimestamp < this.framePeriodMs)
+    // {
+    //   return;
+    // }
+    // else
+    // {
+    //   this.lastUpdateTimestamp = now;
+    // }
+		//
+		// NEW SOLUTION:
+		// SLEEP COUNTER! 
+		// while sleeping dont update. set sleep counter based on the speed impulse value
+		if (SLEEP_COUNTER) {
+			if (this.updateSleepCtr > 0) // Sleep ongoing
+			{
+				this.updateSleepCtr--;
+				return;
+			}
+			else // Get new sleep ctr
+			{
+				this.updateSleepCtr = ((1-this.speedImpulse.getVal()) * 10);
+				this.updateSleepCtr -= 4; // hack
+				// console.log(this.updateSleepCtr);
+			}
+		}
 
     this.numCellChanges = 0;
     for (var y = 0; y < this.currentFrame.length; y++)
@@ -480,7 +528,7 @@ class GoLBoard
       var newv = this.color[2];
       this.color = [newh, news, newv];
     }
-    console.log("UPDATE ENDED");
+    // console.log("UPDATE ENDED");
   }
 
   drawBoard()
@@ -575,28 +623,42 @@ class Canvas
   drawCanvas()
   {
     this.board.drawBoard();
+
     if (DEBUG_PALETTE)
     {
       this.board.golColorGen.drawDebugPalette();
     }
-    if (SAVE_FRAMES && this.frameId === 0)
+
+    if (SAVE_FRAMES && this.frameId === 0 && !SAVE_FRAMES_NAIVE) // P5CAPTURE
     {
-      //this.saveFrame();
-      //sleep(SAVE_FRAMES_SLEEP);
       const capture = P5Capture.getInstance();
       capture.start({
-        format: "mp4",
+        format: "webm",
         framerate: 30,
+				quality: 1,
       });
       this.recording = true;
     }
+
+		if (SAVE_FRAMES)
+		{
+			this.saveFrame();
+			sleep(SAVE_FRAMES_SLEEP);
+		}
+
     this.frameId++;
-    if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES && this.recording)
+
+    if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES && this.recording && !SAVE_FRAMES_NAIVE) // P5CAPTURE
     {
       const capture = P5Capture.getInstance();
       capture.stop();
       this.recording = false;
     }
+
+		if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES)
+		{
+			SAVE_FRAMES = false;
+		}
   }
 
   drawDebugPanel()
@@ -744,6 +806,8 @@ function keyPressedGeneric(arr)
     var centery = WINDOW_HEIGHT/2;
     var r = Math.random() * (DRAW_CIRCLE_RAND_MAX - DRAW_CIRCLE_RAND_MIN) + DRAW_CIRCLE_RAND_MIN;
     myCanvas.drawCircle(centerx, centery, r);
+
+		myCanvas.board.resetSleepCtr();
   }
   if (k == 'C')
   {
@@ -753,6 +817,8 @@ function keyPressedGeneric(arr)
     var centerDiffY = Math.abs(centery - y);
     var r = createVector(centerDiffX, centerDiffY).mag();
     myCanvas.drawCircle(centerx, centery, r);
+
+		myCanvas.board.resetSleepCtr();
   }
   if (k == 'p')
   {
@@ -802,11 +868,12 @@ function keyPressedGeneric(arr)
   if (k == 'z' || k == 'Z')
   {
     myCanvas.board.speedImpulse.reset();
+		myCanvas.board.resetSleepCtr();
   }
   if (k == 'm' || k == 'M')
   {
     var cellChanges = myCanvas.board.getNumCellChanges();
-    console.log("JON CELLCHANGES", cellChanges);
+    // console.log("JON CELLCHANGES", cellChanges);
     if (cellChanges < 20)
     {
       keyPressedGeneric('c');
@@ -883,15 +950,15 @@ function keyReleased()
 myCanvas = undefined; 
 p5jsCanvas = undefined;
 autoInput = undefined;
-//if (SAVE_FRAMES)
-//{
-  //P5Capture.setDefaultOptions({
-    //format: "mp4",
-    //framerate: 30,
-    //quality: 1,
-    //width: WINDOW_WIDTH,
-  //});
-//}
+if (SAVE_FRAMES && !SAVE_FRAMES_NAIVE)
+{
+  P5Capture.setDefaultOptions({
+    format: "webm",
+    framerate: 30,
+    quality: 1,
+    width: WINDOW_WIDTH,
+  });
+}
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -906,6 +973,7 @@ function setup()
   background(DEFAULT_BACKGROUND);
   textSize(12);
   smooth(8);
+	frameRate(FRAME_PER_SECOND);
   myCanvas = new Canvas();
 
   autoInput = new AutoInput(AUTO_INPUT_LIST_FRAME);
@@ -926,18 +994,18 @@ var fps = 0;
 var timeSinceLastFrameMsMs = 0;
 function draw()
 {
-  var frameTs = Date.now();
-  if (lastFrameTs != 0)
-  {
-    timeSinceLastFrameMsMs = frameTs - lastFrameTs;
-    fps = int(1000 / timeSinceLastFrameMsMs);
-
-    if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
-    {
-      return;
-    }
-  }
-  lastFrameTs = frameTs;
+  // var frameTs = Date.now();
+  // if (lastFrameTs != 0)
+  // {
+  //   timeSinceLastFrameMsMs = frameTs - lastFrameTs;
+  //   fps = int(1000 / timeSinceLastFrameMsMs);
+  //
+  //   if (FRAME_LIMITING && timeSinceLastFrameMsMs < FRAME_PERIOD_MS)
+  //   {
+  //     return;
+  //   }
+  // }
+  // lastFrameTs = frameTs;
   if (AUTO_INPUT_ENABLED)
   {
     autoInput.updateFrame();
