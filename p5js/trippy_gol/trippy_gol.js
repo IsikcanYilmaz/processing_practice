@@ -17,8 +17,8 @@ var TAU = Math.PI * 2;
 
 var WINDOW_HEIGHT = 500;
 var WINDOW_WIDTH  = 500;
-var GRID_CELLS_Y = 50;
-var GRID_CELLS_X = 50;
+var GRID_CELLS_Y = 25;
+var GRID_CELLS_X = 25;
 
 var INPUT_MIRROR = false;
 var VISUAL_MIRROR = true;
@@ -43,7 +43,7 @@ var COLORED = true;
 var IQ_COLOR_SCHEME = true; 
 var COLOR_MODE_RGB = true;
 
-var DEFAULT_IQ_NUMGENS = 50;
+var DEFAULT_IQ_NUMGENS = 100;
 var DEFAULT_IQ_COLOR_PALETTE = 10;//15;//13;
 var IQ_REVERSE_SPECTRUM = true;
 
@@ -58,15 +58,7 @@ var H_ALIVE = 0;
 var S_ALIVE = 0;
 var V_ALIVE = 100;
 
-// var H_DELTA = 0;
-// var H_DECAY = 0.0;
-// var S_DECAY = 0.25; //0.25;
-// var V_DECAY = 0.25;
-
-var H_DELTA = 2;
-var H_DECAY = 0.0;
-var S_DECAY = 0.0; //0.25;
-var V_DECAY = 2.5;
+var config = {"H_DELTA":2, "H_DECAY":0.0, "S_DECAY":0.0, "V_DECAY":8};
 
 var DEFAULT_UPDATE_PER_SECOND = 1;
 var MAX_UPDATE_PER_SECOND = 50;
@@ -76,7 +68,7 @@ var UPDATE_PER_SECOND_MIN = 0.5;
 var MOUSE_WHEEL_SMOOTHING_COEFF = 0.001;
 var MOUSE_WHEEL_MAX_DELTA = 0.01;
 
-var SAVE_FRAMES = false;
+var SAVE_FRAMES = true;
 var SAVE_FRAMES_NAIVE = true;
 var SAVE_NUM_FRAMES = 30 * 45;
 var SAVE_FRAMES_SLEEP = 10;
@@ -106,7 +98,7 @@ var DEBUG_PALETTE_HEIGHT = WINDOW_HEIGHT / 10;
 
 // sync to amo bishop roden by boards of canada 
 // palette no 9 also seems nice
-var PULSE_PERIOD = 24; 
+var PULSE_PERIOD = 30; 
 var AUTO_INPUT_LIST_FRAME = [
                             // [PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], [0, "key", "o"], [0, "key", " "], 
                             //
@@ -131,9 +123,16 @@ AUTO_INPUT_LIST_FRAME = [ // version 2
 												[0, "key", " "], // Unpause 
 												[PULSE_PERIOD, "key", "C", 90+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], // Initial circle 
 
-												[0, "loop", "begin", 30],  // Loop 10 times like that
+												[0, "loop", "begin", 100],  // Loop 10 times like that
 												[0, "key", "c", 200+(WINDOW_WIDTH/2), WINDOW_HEIGHT/2], 
-												[PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], [PULSE_PERIOD, "key", "m"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
+												[PULSE_PERIOD, "key", "z"], 
 												[1, "loop", "end"],
 
 												// [0, "key", "o"], // Enable color
@@ -276,7 +275,7 @@ class GoLBoard
     this.playing = false;
     this.showAliveCells = true;
     this.lastUpdateTimestamp = 0;
-    this.speedImpulse = new Impulse(1/15, 0.05);
+    this.speedImpulse = new Impulse(1/30, 0.02);
     this.golColorGen = new GoLColorGen(DEFAULT_IQ_NUMGENS);
     this.setFrameFrequency(DEFAULT_UPDATE_PER_SECOND);
     this.numCellChanges = 0;
@@ -441,8 +440,8 @@ class GoLBoard
 
     // Pipe from oscillators/signals to destinations
     //this.setFrameFrequency(MAX_UPDATE_PER_SECOND * this.speedImpulse.getVal());
-		var fps_multiplier = this.speedImpulse.getVal();
-    this.setFrameFrequency(FRAME_PER_SECOND * fps_multiplier);
+		// var fps_multiplier = this.speedImpulse.getVal();
+    // this.setFrameFrequency(FRAME_PER_SECOND * fps_multiplier);
 
     // // Frame per second limiting
 		// // THIS WAS DOING FPS LIMITING BY CHECKING THE TIME
@@ -460,17 +459,19 @@ class GoLBoard
 		// NEW SOLUTION:
 		// SLEEP COUNTER! 
 		// while sleeping dont update. set sleep counter based on the speed impulse value
-		if (SLEEP_COUNTER) {
+		if (SLEEP_COUNTER) 
+		{
 			if (this.updateSleepCtr > 0) // Sleep ongoing
 			{
 				this.updateSleepCtr--;
+				// console.log("decrement", this.updateSleepCtr);
 				return;
 			}
 			else // Get new sleep ctr
 			{
-				this.updateSleepCtr = ((1-this.speedImpulse.getVal()) * 10);
+				this.updateSleepCtr = ((1-this.speedImpulse.getVal()) * 20);
 				this.updateSleepCtr -= 4; // hack
-				// console.log(this.updateSleepCtr);
+				// console.log("init", this.updateSleepCtr);
 			}
 		}
 
@@ -528,7 +529,7 @@ class GoLBoard
     }
     else
     {
-      var newh = (this.color[0] + H_DELTA) % H_MAX;
+      var newh = (this.color[0] + config.H_DELTA) % H_MAX;
       var news = this.color[1];
       var newv = this.color[2];
       this.color = [newh, news, newv];
@@ -601,9 +602,9 @@ class GoLBoard
           rect(x * GRID_RENDER_CELL_WIDTH, GRID_HEIGHT - GRID_RENDER_CELL_HEIGHT + (GRID_CELLS_Y-y) * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
           rect(GRID_WIDTH - GRID_RENDER_CELL_WIDTH + (GRID_CELLS_X-x) * GRID_RENDER_CELL_WIDTH, GRID_HEIGHT - GRID_RENDER_CELL_HEIGHT + (GRID_CELLS_Y-y) * GRID_RENDER_CELL_HEIGHT, GRID_RENDER_CELL_WIDTH, GRID_RENDER_CELL_HEIGHT);
         }
-        this.coloredFrame[y][x] = [(cellColor[0] - H_DECAY < 0) ? 0 : (cellColor[0] - H_DECAY), 
-          (cellColor[1] - S_DECAY < 0) ? 0 : (cellColor[1] - S_DECAY), 
-          (cellColor[2] - V_DECAY < 0) ? 0 : (cellColor[2] - V_DECAY)]; 
+        this.coloredFrame[y][x] = [(cellColor[0] - config.H_DECAY < 0) ? 0 : (cellColor[0] - config.H_DECAY), 
+          (cellColor[1] - config.S_DECAY < 0) ? 0 : (cellColor[1] - config.S_DECAY), 
+          (cellColor[2] - config.V_DECAY < 0) ? 0 : (cellColor[2] - config.V_DECAY)]; 
       }
     }
   }
@@ -636,12 +637,12 @@ class Canvas
 
     if (SAVE_FRAMES && this.frameId === 0 && !SAVE_FRAMES_NAIVE) // P5CAPTURE
     {
-      const capture = P5Capture.getInstance();
-      capture.start({
-        format: "webm",
-        framerate: 30,
-				quality: 1,
-      });
+      // const capture = P5Capture.getInstance();
+    //   capture.start({
+    //     format: "webm",
+    //     framerate: 30,
+				// quality: 1,
+    //   });
       this.recording = true;
     }
 
@@ -655,8 +656,8 @@ class Canvas
 
     if (SAVE_FRAMES && this.frameId > SAVE_NUM_FRAMES && this.recording && !SAVE_FRAMES_NAIVE) // P5CAPTURE
     {
-      const capture = P5Capture.getInstance();
-      capture.stop();
+      // const capture = P5Capture.getInstance();
+      // capture.stop();
       this.recording = false;
     }
 
@@ -955,15 +956,15 @@ function keyReleased()
 myCanvas = undefined; 
 p5jsCanvas = undefined;
 autoInput = undefined;
-if (SAVE_FRAMES && !SAVE_FRAMES_NAIVE)
-{
-  P5Capture.setDefaultOptions({
-    format: "webm",
-    framerate: 30,
-    quality: 1,
-    width: WINDOW_WIDTH,
-  });
-}
+// if (SAVE_FRAMES && !SAVE_FRAMES_NAIVE)
+// {
+//   P5Capture.setDefaultOptions({
+//     format: "webm",
+//     framerate: 30,
+//     quality: 1,
+//     width: WINDOW_WIDTH,
+//   });
+// }
 function setup()
 {
   p5jsCanvas = createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -997,6 +998,14 @@ function setup()
 var lastFrameTs = 0;
 var fps = 0;
 var timeSinceLastFrameMsMs = 0;
+var gui = new dat.GUI({hideable:true});
+
+var folder1 = gui.addFolder("Knobs");
+folder1.add(config, "H_DELTA", 0, 100);
+folder1.add(config, "H_DECAY", 0, 100);
+folder1.add(config, "S_DECAY", 0, 100);
+folder1.add(config, "V_DECAY", 0, 10);
+folder1.open()
 function draw()
 {
   // var frameTs = Date.now();
