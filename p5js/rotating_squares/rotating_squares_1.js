@@ -22,8 +22,7 @@ var DEFAULT_WIDTH_UP_SPEED = 0.3;
 var DEFAULT_WIDTH_DOWN_SPEED = 0.6;
 var DEFAULT_SQUARE_THICKNESS = 3;
 var DEFAULT_LOW_SQUARE_WIDTH_THRESHOLD = 10;
-var COLORED = false;
-var ROTATION = false;
+var COLORED = true;
 var ROTATE = false;
 
 inputs = [[999,999]];
