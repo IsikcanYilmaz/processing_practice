@@ -31,14 +31,48 @@ var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_LINES = false;
 var DEBUG_FPS = false;
 
-var GRID_LEN = 16;
+var GRID_LEN = 4;
 var CELL_LEN_PX = (WINDOW_WIDTH / GRID_LEN);
+
+// https://stackoverflow.com/questions/63163468/generate-a-256-bit-random-number
+function rnd64() 
+{
+  const bytes = new Uint8Array(32);
+  
+  // load cryptographically random bytes into array
+  window.crypto.getRandomValues(bytes);
+  
+  // convert byte array to hexademical representation
+  const bytesHex = bytes.reduce((o, v) => o + ('00' + v.toString(16)).slice(-2), '');
+  
+  // convert hexademical value to a decimal string
+  return BigInt('0x' + bytesHex);
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+function getRandomInt(max) 
+{ 
+  return Math.floor(Math.random() * max);
+}
+
+// JS cannot shift more than 31 bits for some reason. Do what shifting would to in Math functions
+function shift(num, shift)
+{
+  return (num * Math.pow(2, shift));
+}
 
 class Grid
 {
   constructor(len)
   {
     this.len = len;
+    this.num = 0;
+  }
+
+  // 
+  setNumber(num)
+  {
+    this.num = num;
   }
 
   draw()
@@ -47,11 +81,26 @@ class Grid
     noFill();
     strokeWeight(1);
 
-    for (var i = 0; i < GRID_LEN; i++)
+    var count = 0;
+    for (var j = 0; j < GRID_LEN; j++)
     {
-      for (var j = 0; j < GRID_LEN; j++)
+      for (var i = 0; i < GRID_LEN; i++)
       {
+        var toFill = (this.num & shift(1, count)) > 0;
+        if (toFill)
+        {
+          fill([0, 0, 0]);
+        }
+        else
+        {
+          noFill();
+        }
         rect(i * CELL_LEN_PX, j * CELL_LEN_PX, CELL_LEN_PX, CELL_LEN_PX);
+
+        fill("red");
+        text(count, i*CELL_LEN_PX + CELL_LEN_PX/2, j*CELL_LEN_PX + CELL_LEN_PX/2);
+
+        count++;
       }
     }
 
@@ -67,6 +116,7 @@ class Canvas
 		this.config = {
 									};
     this.grid = new Grid(GRID_LEN);
+    this.grid.setNumber(2);
   }
 
   updateCanvas(currFrame)
