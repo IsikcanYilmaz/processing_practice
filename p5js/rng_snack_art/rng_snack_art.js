@@ -158,7 +158,7 @@ class Canvas
 		this.config = {
 									};
     this.grid = new Grid(GRID_LEN_CELLS);
-    this.grid.setNumber(2,2);
+    this.grid.setNumber(0, 0);
   }
 
   updateCanvas(currFrame)
@@ -195,6 +195,11 @@ function mouseWheel()
 }
 
 function mouseClicked()
+{
+  myCanvas.grid.setNumber(getRandomInt(RANDOM_NUM_UL), getRandomInt(RANDOM_NUM_UL));
+}
+
+function touchStarted()
 {
   myCanvas.grid.setNumber(getRandomInt(RANDOM_NUM_UL), getRandomInt(RANDOM_NUM_UL));
 }
