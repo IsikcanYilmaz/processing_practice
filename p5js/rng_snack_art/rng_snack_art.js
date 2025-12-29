@@ -31,8 +31,17 @@ var TOGGLE_DEBUG_ALLOWED = false;
 var DEBUG_LINES = false;
 var DEBUG_FPS = false;
 
-var GRID_LEN = 4;
-var CELL_LEN_PX = (WINDOW_WIDTH / GRID_LEN);
+var GRID_LEN_CELLS = 8;
+var CELL_LEN_PX = (WINDOW_WIDTH / GRID_LEN_CELLS);
+
+var MIRROR_FOUR_WAYS = true;
+
+if (MIRROR_FOUR_WAYS)
+{
+  CELL_LEN_PX = CELL_LEN_PX/2;
+}
+var GRID_LEN_PX = GRID_LEN_CELLS * CELL_LEN_PX;
+var RANDOM_NUM_UL = 0xffffffff;
 
 // https://stackoverflow.com/questions/63163468/generate-a-256-bit-random-number
 function rnd64() 
@@ -56,9 +65,19 @@ function getRandomInt(max)
 }
 
 // JS cannot shift more than 31 bits for some reason. Do what shifting would to in Math functions
-function shift(num, shift)
+function shiftLeft(num, shift)
 {
   return (num * Math.pow(2, shift));
+}
+
+function shiftRight(num, shift)
+{
+  return (num * Math.pow(2, 1/shift));
+}
+
+function toHex(num)
+{
+  return num.toString(16);
 }
 
 class Grid
@@ -66,13 +85,15 @@ class Grid
   constructor(len)
   {
     this.len = len;
-    this.num = 0;
+    this.num1 = 0;
+    this.num2 = 0;
   }
 
   // 
-  setNumber(num)
+  setNumber(num1, num2)
   {
-    this.num = num;
+    this.num1 = num1;
+    this.num2 = num2;
   }
 
   draw()
@@ -82,11 +103,22 @@ class Grid
     strokeWeight(1);
 
     var count = 0;
-    for (var j = 0; j < GRID_LEN; j++)
+    for (var j = 0; j < GRID_LEN_CELLS; j++)
     {
-      for (var i = 0; i < GRID_LEN; i++)
+      for (var i = 0; i < GRID_LEN_CELLS; i++)
       {
-        var toFill = (this.num & shift(1, count)) > 0;
+        //var num = (count < 32) ? this.num1 : this.num2;
+        var num;
+        if (count < 32)
+      {
+          num = this.num1;
+        }
+        else
+      {
+          num = this.num2;
+        }
+
+        var toFill = (num & shiftLeft(1, count%32)) != 0;
         if (toFill)
         {
           fill([0, 0, 0]);
@@ -96,9 +128,19 @@ class Grid
           noFill();
         }
         rect(i * CELL_LEN_PX, j * CELL_LEN_PX, CELL_LEN_PX, CELL_LEN_PX);
+        
+        if (MIRROR_FOUR_WAYS)
+        {
+          rect(GRID_LEN_PX + (GRID_LEN_CELLS-i-1) * CELL_LEN_PX, j * CELL_LEN_PX, CELL_LEN_PX, CELL_LEN_PX);
+          rect(i * CELL_LEN_PX, GRID_LEN_PX + (GRID_LEN_CELLS-j-1) * CELL_LEN_PX, CELL_LEN_PX, CELL_LEN_PX);
+          rect(GRID_LEN_PX + (GRID_LEN_CELLS-i-1) * CELL_LEN_PX, GRID_LEN_PX + (GRID_LEN_CELLS-j-1) * CELL_LEN_PX, CELL_LEN_PX, CELL_LEN_PX);
+        }
 
-        fill("red");
-        text(count, i*CELL_LEN_PX + CELL_LEN_PX/2, j*CELL_LEN_PX + CELL_LEN_PX/2);
+        if (DEBUGVISUALS)
+        {
+          fill("red");
+          text(count, i*CELL_LEN_PX + CELL_LEN_PX/2, j*CELL_LEN_PX + CELL_LEN_PX/2);
+        }
 
         count++;
       }
@@ -115,8 +157,8 @@ class Canvas
   {
 		this.config = {
 									};
-    this.grid = new Grid(GRID_LEN);
-    this.grid.setNumber(2);
+    this.grid = new Grid(GRID_LEN_CELLS);
+    this.grid.setNumber(0, 0);
   }
 
   updateCanvas(currFrame)
@@ -152,12 +194,30 @@ function mouseWheel()
 {
 }
 
+function mouseClicked()
+{
+  myCanvas.grid.setNumber(getRandomInt(RANDOM_NUM_UL), getRandomInt(RANDOM_NUM_UL));
+}
+
+function touchStarted()
+{
+  myCanvas.grid.setNumber(getRandomInt(RANDOM_NUM_UL), getRandomInt(RANDOM_NUM_UL));
+}
+
 function keyPressed()
 {
   console.log("KEY PRESSED", key);
   if (key == ' ')
   {
     myCanvas.paused = false;
+  }
+  if (key == 'd')
+  {
+    DEBUGVISUALS = !DEBUGVISUALS;
+  }
+  if (key == 'r')
+  {
+    myCanvas.grid.setNumber(getRandomInt(RANDOM_NUM_UL), getRandomInt(RANDOM_NUM_UL));
   }
 }
 
